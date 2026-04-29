@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+	_ "github.com/paragpratim/gcp-task-orchestration/service/docs" // Import generated docs
 	"github.com/paragpratim/gcp-task-orchestration/service/internal/api/handlers"
 )
 
@@ -12,6 +14,9 @@ func NewRouter() *http.ServeMux {
 	
 	// Register handlers
 	mux.HandleFunc("/health", handlers.HealthHandler)
+	
+	// Register Swagger UI handler
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 	
 	return mux
 }

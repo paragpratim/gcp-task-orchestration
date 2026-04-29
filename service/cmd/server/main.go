@@ -8,6 +8,12 @@ import (
 	"github.com/paragpratim/gcp-task-orchestration/service/internal/api"
 )
 
+// @title           GCP Task Orchestration API
+// @version         1.0
+// @description     This is a server for the GCP Task Orchestration service.
+
+// @host      localhost:8080
+// @BasePath  /
 func main() {
 	// Initialize the router
 	router := api.NewRouter()

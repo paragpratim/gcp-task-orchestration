@@ -1,0 +1,22 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a server for the GCP Task Orchestration service.
+  title: GCP Task Orchestration API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Responds with an OK status if the service is running.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+swagger: "2.0"
