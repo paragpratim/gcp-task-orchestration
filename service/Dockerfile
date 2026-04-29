@@ -17,7 +17,7 @@ COPY . ./
 
 # Build the binary.
 # -v: prints the names of packages as they are compiled.
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o server
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o server ./cmd/server
 
 # Use a Docker multi-stage build to create a lean production image.
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
