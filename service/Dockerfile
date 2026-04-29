@@ -16,7 +16,7 @@ COPY . ./
 
 # Build the binary.
 # -v: prints the names of packages as they are compiled.
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o build/service ./cmd/service
 
 # Use a Docker multi-stage build to create a lean production image.
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
@@ -24,7 +24,7 @@ FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/server /server
+COPY --from=builder /app/build/service /service
 
 # Run the web service on container startup.
-CMD ["/server"]
+CMD ["/service"]
