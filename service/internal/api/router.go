@@ -14,6 +14,7 @@ func NewRouter() *http.ServeMux {
 	
 	// Register handlers
 	mux.HandleFunc("/health", handlers.HealthHandler)
+	mux.HandleFunc("/dataflow/flex/submit", handlers.SubmitDataflowJobHandler)
 	
 	// Register Swagger UI handler
 	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
