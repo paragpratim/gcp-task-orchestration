@@ -1,0 +1,28 @@
+name: Deploy Service to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'service/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Placeholder - Set up Cloud SDK
+        run: echo "Setup Google Cloud authentication here"
+
+      - name: Placeholder - Build Docker Image
+        run: echo "Build the service Docker image here"
+
+      - name: Placeholder - Push Docker Image
+        run: echo "Push the Docker image to Artifact Registry here"
+
+      - name: Placeholder - Deploy to Cloud Run
+        run: echo "Deploy the pushed image to Cloud Run here"
