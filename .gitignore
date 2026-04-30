@@ -35,3 +35,6 @@ go.work.sum
 build/
 service/build/
 service/service
+
+# task
+.task/

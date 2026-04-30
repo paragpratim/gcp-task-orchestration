@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/paragpratim/gcp-task-orchestration/service/internal/logger"
 	"github.com/paragpratim/gcp-task-orchestration/service/internal/models"
 	df "google.golang.org/api/dataflow/v1b3"
 	"google.golang.org/api/option"
@@ -28,6 +29,7 @@ func NewService(ctx context.Context) (*Service, error) {
 // CheckJobActive checks if a job with the given name is currently active.
 // It returns the job ID if found, a boolean indicating if it's active, and any error.
 func (s *Service) CheckJobActive(projectID, region, jobName string) (string, bool, error) {
+	logger.Info("checking if job is active", "project_id", projectID, "region", region, "job_name", jobName)
 	// Filter by ACTIVE state to reduce payload size and focus on running jobs
 	call := s.client.Projects.Locations.Jobs.List(projectID, region).Filter("ACTIVE")
 	resp, err := call.Do()
@@ -46,6 +48,7 @@ func (s *Service) CheckJobActive(projectID, region, jobName string) (string, boo
 
 // LaunchFlexJob submits a new Dataflow Flex Template job.
 func (s *Service) LaunchFlexJob(req models.DataflowRequest) (*df.LaunchFlexTemplateResponse, error) {
+	logger.Info("launching flex template job", "project_id", req.ProjectID, "region", req.Region, "job_name", req.JobName)
 	// Convert parameters from map[string]interface{} to map[string]string
 	params := make(map[string]string)
 	for k, v := range req.Parameters {
@@ -88,6 +91,7 @@ func (s *Service) LaunchFlexJob(req models.DataflowRequest) (*df.LaunchFlexTempl
 
 // StopJob attempts to stop a running job by draining or cancelling it.
 func (s *Service) StopJob(projectID, region, jobID, stopMode string) (*df.Job, error) {
+	logger.Info("stopping job", "project_id", projectID, "region", region, "job_id", jobID, "stop_mode", stopMode)
 	var requestedState string
 	switch strings.ToLower(stopMode) {
 	case "drain":

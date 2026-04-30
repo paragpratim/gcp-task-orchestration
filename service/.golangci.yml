@@ -1,0 +1,17 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # go vet issues
+    - staticcheck    # advanced static analysis
+    - unused         # unused code
+    - ineffassign    # useless assignments
+    - bodyclose      # unclosed HTTP response bodies
+    - errname        # sentinel error naming conventions
+    - errorlint      # error wrapping best practices
+
+formatters:
+  enable:
+    - gofmt          # standard formatting
+    - goimports      # import ordering

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/paragpratim/gcp-task-orchestration/service/internal/api"
+	"github.com/paragpratim/gcp-task-orchestration/service/internal/logger"
 )
 
 // @title           GCP Task Orchestration API
@@ -15,17 +15,21 @@ import (
 // @host      localhost:8080
 // @BasePath  /
 func main() {
+	// Initialize the structured logger
+	logger.Init()
+
 	// Initialize the router
 	router := api.NewRouter()
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
-		log.Printf("Defaulting to port %s", port)
+		logger.Info("defaulting to port", "port", port)
 	}
 
-	log.Printf("Listening on port %s", port)
+	logger.Info("starting server", "port", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
-		log.Fatal(err)
+		logger.Error("server failed to start", "error", err)
+		os.Exit(1)
 	}
 }

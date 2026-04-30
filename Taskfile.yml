@@ -1,0 +1,68 @@
+version: "3"
+
+vars:
+  SERVICE_DIR: ./service
+
+tasks:
+  default:
+    desc: Run lint, test, and build in sequence
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
+
+  lint:
+    desc: Run golangci-lint on the Go service
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - golangci-lint run ./...
+
+  lint:fix:
+    desc: Run golangci-lint with auto-fix enabled
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - golangci-lint run --fix ./...
+
+  test:
+    desc: Run all Go tests with verbose output
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - go test -v -race -count=1 ./...
+
+  test:cover:
+    desc: Run tests with coverage report
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - go test -v -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+      - rm -f coverage.out
+
+  build:
+    desc: Build the Go service binary
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - go build -o build/service ./cmd/service
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - build/service
+
+  clean:
+    desc: Remove build artifacts
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - rm -rf build/
+
+  tidy:
+    desc: Run go mod tidy
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - go mod tidy
+
+  swagger:
+    desc: Regenerate Swagger documentation
+    dir: "{{.SERVICE_DIR}}"
+    cmds:
+      - swag init -g cmd/service/main.go
