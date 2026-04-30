@@ -64,6 +64,7 @@ func (s *Service) LaunchFlexJob(req models.DataflowRequest) (*df.LaunchFlexTempl
 				MaxWorkers:            int64(req.MaxWorkers),
 				IpConfiguration:       req.IPConfiguration,
 				EnableStreamingEngine: req.EnableStreamingEngine,
+				WorkerRegion:          req.Region,
 				Zone:                  req.Zone,
 			},
 		},
