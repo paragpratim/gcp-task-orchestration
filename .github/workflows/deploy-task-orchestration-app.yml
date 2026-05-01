@@ -17,7 +17,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
   REGION: europe-west4
-  ARTIFACT_REGISTRY: europe-west4-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator/task-orchestration-app
+  ARTIFACT_REGISTRY: europe-west4-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
 
 jobs:
   build-and-deploy:
@@ -99,23 +99,25 @@ jobs:
       - name: Update Cloud Run service YAML with environment variables and image tags
         env:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+        working-directory: service
         run: |
           # Create a copy of the YAML file
-          cp task-orchestration-app-cloud-run.yml task-orchestration-app-cloud-run-deploy.yml
+          cp cloud-run.yml cloud-run-deploy.yml
           
           # Substitute environment variables
-          envsubst < task-orchestration-app-cloud-run-deploy.yml > task-orchestration-app-cloud-run-final.yml
-          mv task-orchestration-app-cloud-run-final.yml task-orchestration-app-cloud-run-deploy.yml
+          envsubst < cloud-run-deploy.yml > cloud-run-final.yml
+          mv cloud-run-final.yml cloud-run-deploy.yml
 
           # Update image tags
-          sed -i "s|task-orchestration-app:latest|task-orchestration-app:${{ env.IMAGE_TAG }}|g" task-orchestration-app-cloud-run-deploy.yml
+          sed -i "s|task-orchestration-app:latest|task-orchestration-app:${{ env.IMAGE_TAG }}|g" cloud-run-deploy.yml
           
           echo "Updated YAML file:"
-          cat task-orchestration-app-cloud-run-deploy.yml
+          cat cloud-run-deploy.yml
 
       - name: Deploy to Cloud Run
+        working-directory: service
         run: |
-          gcloud run services replace task-orchestration-app-cloud-run-deploy.yml --region=${{ env.REGION }}
+          gcloud run services replace cloud-run-deploy.yml --region=${{ env.REGION }}
 
       - name: Configure Cloud Run for IAP
         run: |
