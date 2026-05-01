@@ -69,13 +69,3 @@ resource "google_compute_subnetwork" "orchestrator_subnet" {
 
   depends_on = [google_compute_network.orchestrator_vpc]
 }
-
-# Create Serverless VPC Access connector
-resource "google_vpc_access_connector" "orchestrator_vpc_connector" {
-  name          = "orchestrator-vpc-connector"
-  region        = var.region
-  network       = google_compute_network.orchestrator_vpc.name
-  ip_cidr_range = "10.0.1.0/28"
-
-  depends_on = [google_compute_network.orchestrator_vpc]
-}

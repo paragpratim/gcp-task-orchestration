@@ -32,8 +32,3 @@ output "subnetwork_ip_cidr_range" {
   description = "The subnet IP CIDR range"
   value       = module.gcp_task_orchestration.subnetwork_ip_cidr_range
 }
-
-output "vpc_connector_name" {
-  description = "The Serverless VPC Access connector name"
-  value       = module.gcp_task_orchestration.vpc_connector_name
-}

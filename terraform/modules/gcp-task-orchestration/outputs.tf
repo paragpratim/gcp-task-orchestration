@@ -32,8 +32,3 @@ output "subnetwork_ip_cidr_range" {
   description = "The subnet IP CIDR range"
   value       = google_compute_subnetwork.orchestrator_subnet.ip_cidr_range
 }
-
-output "vpc_connector_name" {
-  description = "The Serverless VPC Access connector name"
-  value       = google_vpc_access_connector.orchestrator_vpc_connector.name
-}
