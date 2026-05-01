@@ -1,0 +1,179 @@
+name: Deploy Task Orchestration Service to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'service/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag (leave empty for git SHA)'
+        required: false
+        type: string
+
+env:
+  PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
+  REGION: europe-west4
+  ARTIFACT_REGISTRY: europe-west4-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator/task-orchestration-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ "${{ github.event.inputs.image_tag }}" != "" ]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "Using custom image tag: ${{ github.event.inputs.image_tag }}"
+          else
+            echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "Using git SHA as image tag: ${{ github.sha }}"
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install gcloud beta components
+        run: |
+          gcloud components install beta --quiet
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+          cache: true
+          cache-dependency-path: service/go.sum
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          working-directory: service
+          args: --timeout=5m
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and push backend image
+        env:
+          IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+        run: |
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest \
+                       ./service
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest
+
+      - name: Update Cloud Run service YAML with environment variables and image tags
+        env:
+          IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+        run: |
+          # Create a copy of the YAML file
+          cp task-orchestration-app-cloud-run.yml task-orchestration-app-cloud-run-deploy.yml
+          
+          # Substitute environment variables
+          envsubst < task-orchestration-app-cloud-run-deploy.yml > task-orchestration-app-cloud-run-final.yml
+          mv task-orchestration-app-cloud-run-final.yml task-orchestration-app-cloud-run-deploy.yml
+
+          # Update image tags
+          sed -i "s|task-orchestration-app:latest|task-orchestration-app:${{ env.IMAGE_TAG }}|g" task-orchestration-app-cloud-run-deploy.yml
+          
+          echo "Updated YAML file:"
+          cat task-orchestration-app-cloud-run-deploy.yml
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run services replace task-orchestration-app-cloud-run-deploy.yml --region=${{ env.REGION }}
+
+      - name: Configure Cloud Run for IAP
+        run: |
+          echo "Enabling IAP for task-orchestration-app..."
+          gcloud beta run services update task-orchestration-app \
+          --region=${{ env.REGION }} \
+          --iap
+
+          echo "Getting project number..."
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
+
+          echo "Grant invoker permission to the IAP service agent..."
+          gcloud run services add-iam-policy-binding task-orchestration-app \
+            --region=${{ env.REGION }} \
+            --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
+            --role="roles/run.invoker"
+
+      - name: Get service URL
+        id: get-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe task-orchestration-app --region=${{ env.REGION }} --format="value(status.url)")
+          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Service deployed at: $SERVICE_URL"
+
+      - name: Output deployment info
+        env:
+          IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Trigger:** \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Branch/Ref:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** These URLs are protected by Google Cloud IAP and require authentication." >> $GITHUB_STEP_SUMMARY
+
+    outputs:
+      service_url: ${{ steps.get-url.outputs.SERVICE_URL }}
+      image_tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+
+  post-deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: always() && needs.build-and-deploy.result == 'success'
+    
+    steps:
+      - name: Notify deployment success
+        run: |
+          echo "🎉 Task Orchestration Application successfully deployed!"
+          echo ""
+          echo "📋 **Deployment Details:**"
+          echo "   - Trigger: ${{ github.event_name }}"
+          echo "   - Image Tag: ${{ needs.build-and-deploy.outputs.image_tag }}"
+          echo ""
+          echo "🌐 **Application URLs:**"
+          echo "   - Frontend: ${{ needs.build-and-deploy.outputs.service_url }}"
+          echo "   - Swagger UI: ${{ needs.build-and-deploy.outputs.service_url }}/swagger/index.html"
+          echo ""
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "✅ Automatic deployment triggered by push to main branch"
+          else
+            echo "✅ Manual deployment triggered via workflow_dispatch"
+          fi
+          echo ""
+          echo "🔐 Note: All URLs require IAP authentication"
