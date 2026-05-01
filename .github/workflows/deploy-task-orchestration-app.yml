@@ -66,6 +66,7 @@ jobs:
 
       - name: Install dependencies
         run: go mod download
+        working-directory: service
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -76,9 +77,11 @@ jobs:
 
       - name: Build
         run: go build -v ./...
+        working-directory: service
 
       - name: Test
         run: go test -v ./...
+        working-directory: service
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
