@@ -1,2 +1,7 @@
-# Placeholder for Terraform Infrastructure Definitions
-# You will define your GCP infrastructure (Cloud Run, IAM, etc.) here.
+module "gcp_task_orchestration" {
+  source = "./modules/gcp-task-orchestration"
+
+  project_id = var.project_id
+  region     = var.region
+  my_domain  = var.my_domain
+}

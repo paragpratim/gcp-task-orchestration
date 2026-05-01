@@ -10,26 +10,26 @@ output "region" {
 
 output "service_account_email" {
   description = "The service account email"
-  value       = module.gcp_task_orchestration.service_account_email
+  value       = google_service_account.orchestrator_service_account.email
 }
 
 output "artifact_registry_repository" {
   description = "The Artifact Registry repository name"
-  value       = module.gcp_task_orchestration.artifact_registry_repository
+  value       = google_artifact_registry_repository.task_orchestrator_repository.name
 }
 
 output "vpc_name" {
   description = "The VPC name"
-  value       = module.gcp_task_orchestration.vpc_name
+  value       = google_compute_network.orchestrator_vpc.name
 }
 
 output "subnet_name" {
   description = "The subnet name"
-  value       = module.gcp_task_orchestration.subnet_name
+  value       = google_compute_subnetwork.orchestrator_subnet.name
 }
 
 output "subnetwork_ip_cidr_range" {
   description = "The subnet IP CIDR range"
-  value       = module.gcp_task_orchestration.subnetwork_ip_cidr_range
+  value       = google_compute_subnetwork.orchestrator_subnet.ip_cidr_range
 }
 

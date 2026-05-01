@@ -1,0 +1,151 @@
+name: Deploy Terraform Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'terraform/**'
+      - '.github/workflows/deploy-terraform.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/deploy-terraform.yml'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+
+env:
+  PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
+  REGION: europe-west4
+  TF_VAR_project_id: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
+  TF_VAR_region: europe-west4
+  TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      actions: write
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ env.PROJECT_ID }}  # Set target project directly in auth
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Initialize Terraform and Validate
+        uses: paragpratim/github-actions-pipeline-templates/.github/actions/terraform-validate@main
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: terraform
+        run: |
+          set +e  # Don't exit on error
+          terraform plan -detailed-exitcode -no-color -out=tfplan
+          PLAN_EXIT_CODE=$?
+          echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          # Only fail if exit code is 1 (actual error)
+          if [ $PLAN_EXIT_CODE -eq 1 ]; then
+            echo "❌ Terraform plan failed"
+            exit 1
+          fi
+          
+          # Exit codes 0 (no changes) and 2 (changes detected) are success
+          echo "✅ Terraform plan completed with exit code: $PLAN_EXIT_CODE"
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const plan = `${{ steps.plan.outputs.stdout }}`;
+            const exitCode = `${{ steps.plan.outputs.exitcode }}`;
+            
+            let status = '';
+            if (exitCode === '0') {
+              status = '✅ No changes detected';
+            } else if (exitCode === '2') {
+              status = '📋 Changes detected';
+            } else {
+              status = '❌ Plan failed';
+            }
+            
+            const output = `## Terraform Plan Results ${status}
+            
+            <details><summary>Show Plan Output</summary>
+            
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+            
+            </details>
+            
+            *Plan Exit Code: ${exitCode}*
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Terraform Apply
+        if: |
+          github.ref == 'refs/heads/main' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) &&
+          steps.plan.outputs.exitcode == '2'
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve tfplan
+          echo "Infrastructure deployed successfully!"
+
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve
+          echo "Infrastructure destroyed successfully!"
+
+      - name: Output Infrastructure Info
+        if: |
+          github.ref == 'refs/heads/main' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'))
+        working-directory: terraform
+        run: |
+          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Target Project:** ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Region:** $(terraform output -raw region 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Service Account:** $(terraform output -raw service_account_email 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Artifact Registry:** $(terraform output -raw artifact_registry_repository_name 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **VPC Network:** $(terraform output -raw vpc_network_self_link 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Subnet:** $(terraform output -raw subnet_self_link 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **BigQuery Dataset IDs:** $(terraform output -json dataset_ids 2>/dev/null | jq -r '.[]' | paste -sd ',' - || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
