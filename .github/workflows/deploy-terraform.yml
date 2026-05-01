@@ -149,3 +149,4 @@ jobs:
           echo "✅ **VPC Network:** $(terraform output -raw vpc_name 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Subnet:** $(terraform output -raw subnet_name 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Subnet CIDR Range:** $(terraform output -raw subnetwork_ip_cidr_range 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **VPC Connector:** $(terraform output -raw vpc_connector_name 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
