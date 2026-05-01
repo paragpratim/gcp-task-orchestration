@@ -12,6 +12,8 @@ spec:
         autoscaling.knative.dev/minScale: "0"
         run.googleapis.com/cpu-throttling: "true"
         run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/network-interfaces: '[{"network":"projects/${PROJECT_ID}/global/networks/orchestrator-vpc","subnetwork":"projects/${PROJECT_ID}/regions/${REGION}/subnetworks/orchestrator-subnet"}]'
+        run.googleapis.com/vpc-access-egress: all-traffic
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
@@ -38,9 +40,4 @@ spec:
           timeoutSeconds: 10
           periodSeconds: 30
           failureThreshold: 3
-      network:
-        network: projects/${PROJECT_ID}/global/networks/orchestrator-vpc
-        subnetwork: projects/${PROJECT_ID}/regions/${REGION}/subnetworks/orchestrator-subnet
-        egress: all-traffic
-      
       serviceAccountName: svc-cr-task-orchestrator@${PROJECT_ID}.iam.gserviceaccount.com
