@@ -12,7 +12,6 @@ import (
 // @version         1.0
 // @description     This is a server for the GCP Task Orchestration service.
 
-// @host      localhost:8080
 // @BasePath  /
 func main() {
 	// Initialize the structured logger
