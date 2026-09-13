@@ -3,10 +3,10 @@ package dataflow
 import (
 	"context"
 	"fmt"
+	"orchestrator/internal/logger"
+	"orchestrator/internal/models"
 	"strings"
 
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/models"
 	df "google.golang.org/api/dataflow/v1b3"
 	"google.golang.org/api/option"
 )

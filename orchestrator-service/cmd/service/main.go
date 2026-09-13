@@ -1,10 +1,9 @@
 package main
 
 import (
+	"orchestrator/internal/api"
+	"orchestrator/internal/logger"
 	"os"
-
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
 )
 
 // @title           GCP Task Orchestration API

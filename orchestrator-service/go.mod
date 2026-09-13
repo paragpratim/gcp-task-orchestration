@@ -1,4 +1,4 @@
-module github.com/paragpratim/gcp-task-orchestration/orchestrator-service
+module orchestrator
 
 go 1.26.0
 

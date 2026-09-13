@@ -1,12 +1,11 @@
 package api
 
 import (
+	"orchestrator/internal/api/handlers"
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	_ "github.com/paragpratim/gcp-task-orchestration/orchestrator-service/docs" // Import generated docs
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api/handlers"
 )
 
 // NewRouter sets up the HTTP routes for the service.

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"orchestrator/internal/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
 )
 
 // HealthHandler responds to health check requests.

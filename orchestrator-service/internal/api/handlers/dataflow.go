@@ -3,12 +3,12 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"orchestrator/internal/core/dataflow"
+	"orchestrator/internal/logger"
+	"orchestrator/internal/models"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/core/dataflow"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
-	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/models"
 )
 
 // SubmitDataflowJobHandler submits a new Dataflow Flex job.
