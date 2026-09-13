@@ -1,23 +1,24 @@
 package api
 
 import (
-	"net/http"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	_ "github.com/paragpratim/gcp-task-orchestration/orchestrator-service/docs" // Import generated docs
 	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api/handlers"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // NewRouter sets up the HTTP routes for the service.
-func NewRouter() *http.ServeMux {
-	mux := http.NewServeMux()
+func NewRouter() *gin.Engine {
+	router := gin.Default()
 
 	// Register handlers
-	mux.HandleFunc("/health", handlers.HealthHandler)
-	mux.HandleFunc("/dataflow/flex/submit", handlers.SubmitDataflowJobHandler)
+	router.GET("/health", handlers.HealthHandler)
+	router.POST("/dataflow/flex/submit", handlers.SubmitDataflowJobHandler)
 
 	// Register Swagger UI handler
-	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	return mux
+	return router
 }

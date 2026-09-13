@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
 )
 
@@ -13,15 +14,7 @@ import (
 // @Produce      plain
 // @Success      200  {string}  string  "OK"
 // @Router       /health [get]
-func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		logger.Warn("method not allowed on health endpoint", "method", r.Method, "remote_addr", r.RemoteAddr)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	logger.Debug("health check OK", "remote_addr", r.RemoteAddr)
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte("OK")); err != nil {
-		logger.Error("failed to write health response", "error", err)
-	}
+func HealthHandler(c *gin.Context) {
+	logger.Debug("health check OK", "remote_addr", c.ClientIP())
+	c.String(http.StatusOK, "OK")
 }

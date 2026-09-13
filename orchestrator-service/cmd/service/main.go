@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api"
@@ -27,7 +26,7 @@ func main() {
 	}
 
 	logger.Info("starting server", "port", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
+	if err := router.Run(":" + port); err != nil {
 		logger.Error("server failed to start", "error", err)
 		os.Exit(1)
 	}
