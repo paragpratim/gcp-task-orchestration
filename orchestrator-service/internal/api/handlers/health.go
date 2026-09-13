@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/logger"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
 )
 
 // HealthHandler responds to health check requests.

@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  SERVICE_DIR: ./service
+  SERVICE_DIR: ./orchestrator-service
 
 tasks:
   default:
@@ -41,13 +41,13 @@ tasks:
     desc: Build the Go service binary
     dir: "{{.SERVICE_DIR}}"
     cmds:
-      - go build -o build/service ./cmd/service
+      - go build -o build/orchestrator-service ./cmd/service
     sources:
       - "**/*.go"
       - go.mod
       - go.sum
     generates:
-      - build/service
+      - build/orchestrator-service
 
   clean:
     desc: Remove build artifacts

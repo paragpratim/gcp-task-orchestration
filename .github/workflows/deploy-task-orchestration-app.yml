@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'service/**'
+      - 'orchestrator-service/**'
       - '.github/workflows/deploy-task-orchestration-app.yml'
   workflow_dispatch:
     inputs:
@@ -62,26 +62,26 @@ jobs:
         with:
           go-version: '1.25.0'
           cache: true
-          cache-dependency-path: service/go.sum
+          cache-dependency-path: orchestrator-service/go.sum
 
       - name: Install dependencies
         run: go mod download
-        working-directory: service
+        working-directory: orchestrator-service
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          working-directory: service
+          working-directory: orchestrator-service
           args: --timeout=5m
 
       - name: Build
         run: go build -v ./...
-        working-directory: service
+        working-directory: orchestrator-service
 
       - name: Test
         run: go test -v ./...
-        working-directory: service
+        working-directory: orchestrator-service
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
@@ -92,14 +92,14 @@ jobs:
         run: |
           docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }} \
                        -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest \
-                       ./service
+                       ./orchestrator-service
           docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}
           docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest
 
       - name: Update Cloud Run service YAML with environment variables and image tags
         env:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
-        working-directory: service
+        working-directory: orchestrator-service
         run: |
           # Create a copy of the YAML file
           cp cloud-run.yml cloud-run-deploy.yml
@@ -115,7 +115,7 @@ jobs:
           cat cloud-run-deploy.yml
 
       - name: Deploy to Cloud Run
-        working-directory: service
+        working-directory: orchestrator-service
         run: |
           gcloud run services replace cloud-run-deploy.yml --region=${{ env.REGION }}
 

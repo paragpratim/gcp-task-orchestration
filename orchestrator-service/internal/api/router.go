@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	_ "github.com/paragpratim/gcp-task-orchestration/service/docs" // Import generated docs
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/api/handlers"
+	_ "github.com/paragpratim/gcp-task-orchestration/orchestrator-service/docs" // Import generated docs
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api/handlers"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 

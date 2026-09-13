@@ -1,6 +1,6 @@
-module github.com/paragpratim/gcp-task-orchestration/service
+module github.com/paragpratim/gcp-task-orchestration/orchestrator-service
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/swaggo/http-swagger v1.3.4

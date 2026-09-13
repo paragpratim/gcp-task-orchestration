@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/api"
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/logger"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/api"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
 )
 
 // @title           GCP Task Orchestration API

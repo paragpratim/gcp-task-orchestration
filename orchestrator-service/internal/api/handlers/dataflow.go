@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/core/dataflow"
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/logger"
-	"github.com/paragpratim/gcp-task-orchestration/service/internal/models"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/core/dataflow"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/logger"
+	"github.com/paragpratim/gcp-task-orchestration/orchestrator-service/internal/models"
 )
 
 // SubmitDataflowJobHandler submits a new Dataflow Flex job.
