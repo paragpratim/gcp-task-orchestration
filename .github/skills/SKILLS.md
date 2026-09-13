@@ -6,7 +6,7 @@ This file serves as a guide for any AI assistant or developer working on the `gc
 
 The Golang service is located in the `orchestrator-service/` directory and strictly follows the Standard Go Project Layout, powered by the **Gin HTTP Framework**.
 
-- **`cmd/server/main.go`**: This is the entrypoint. It should ONLY be responsible for wiring up dependencies, reading configuration/environment variables, and starting the HTTP server using `router.Run()`. Do not put business logic here.
+- **`cmd/service/main.go`**: This is the entrypoint. It should ONLY be responsible for wiring up dependencies, reading configuration/environment variables, and starting the HTTP server using `router.Run()`. Do not put business logic here.
 - **`internal/`**: All core application logic MUST reside within the `internal/` directory. This ensures that the code cannot be imported by external applications.
   - **`internal/api/router.go`**: Central location for registering HTTP routes. Returns a `*gin.Engine`.
   - **`internal/api/handlers/`**: Contains the HTTP handler functions. Handlers MUST use Gin's context signature (`func MyHandler(c *gin.Context)`). Each handler should be focused on request parsing (`c.ShouldBindJSON`), calling business logic, and returning responses (`c.JSON` / `c.String`).
@@ -51,7 +51,7 @@ Whenever you add a new endpoint or modify an existing Swagger comment, you MUST 
 
 Navigate to the `orchestrator-service/` directory and run:
 ```bash
-swag init -g cmd/server/main.go
+swag init -g cmd/service/main.go
 ```
 This updates the `orchestrator-service/docs/` directory. If the generated files are not updated, the Swagger UI (`http://localhost:8080/swagger/index.html`) will not reflect the latest changes.
 
