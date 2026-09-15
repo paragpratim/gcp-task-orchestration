@@ -11,6 +11,19 @@ tasks:
       - task: test
       - task: build
 
+  up:
+    desc: Validate, build, and start the service with Docker Compose
+    cmds:
+      - task: lint
+      - task: test
+      - task: build
+      - docker compose up -d --build
+
+  down:
+    desc: Stop the Docker Compose services
+    cmds:
+      - docker compose down
+
   lint:
     desc: Run golangci-lint on the Go service
     dir: "{{.SERVICE_DIR}}"
@@ -41,7 +54,8 @@ tasks:
     desc: Build the Go service binary
     dir: "{{.SERVICE_DIR}}"
     cmds:
-      - go build -o build/orchestrator-service ./cmd/service
+      - mkdir -p build
+      - CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/service
     sources:
       - "**/*.go"
       - go.mod
@@ -50,10 +64,10 @@ tasks:
       - build/orchestrator-service
 
   clean:
-    desc: Remove build artifacts
-    dir: "{{.SERVICE_DIR}}"
+    desc: Remove build artifacts and Docker Compose resources
     cmds:
-      - rm -rf build/
+      - rm -rf "{{.SERVICE_DIR}}/build/"
+      - docker compose down --remove-orphans
 
   tidy:
     desc: Run go mod tidy
@@ -65,4 +79,4 @@ tasks:
     desc: Regenerate Swagger documentation
     dir: "{{.SERVICE_DIR}}"
     cmds:
-      - swag init -g cmd/service/main.go
+      - swag init -g main.go -d cmd/service,internal/api,internal/models -o docs
