@@ -11,16 +11,73 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.GET("/intake/health", h.AppHealth)
+	rg.GET("/intake/health", h.appHealth)
+	rg.POST("/intake/job", h.createJob)
+	rg.PUT("/intake/job", h.updateJob)
+	rg.DELETE("/intake/job/:id", h.deleteJob)
+	rg.POST("/intake/jobs/queue", h.queueJobs)
 }
 
-// AppHealth 	 Responds to health check requests.
+// appHealth 	 Responds to health check requests.
 // @Summary      Health check
 // @Description  Responds with an OK status if the api is running.
 // @Tags         health
 // @Produce      plain
 // @Success      200  {string}  string  "OK"
 // @Router       /health [get]
-func (h *Handler) AppHealth(c *gin.Context) {
+func (h *Handler) appHealth(c *gin.Context) {
 	h.service.HealthCheck(c.Request.Context())
+}
+
+// createJob 	 Handles the creation of a new intake job.
+// @Summary      Create Intake Job
+// @Description  Accepts a new intake job request and processes it.
+// @Tags         intake
+// @Accept       json
+// @Produce      json
+// @Param        request  body      intake.IntakeJobRequest  true  "Intake Job Request Payload"
+// @Success      201  {object}  map[string]string "Job Created"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job [post]
+func (h *Handler) createJob(c *gin.Context) {
+	//TODO: Implement the tasks handler
+}
+
+// updateJob 	 Handles the update of an existing intake job.
+// @Summary      Update Intake Job
+// @Description  Accepts an update request for an existing intake job and processes it.
+// @Tags         intake
+// @Accept       json
+// @Produce      json
+// @Param        request  body      intake.IntakeJobRequest  true  "Intake Job Update Payload"
+// @Success      200  {object}  map[string]string "Job Updated"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job [put]
+func (h *Handler) updateJob(c *gin.Context) {
+	//TODO: Implement the update job handler
+}
+
+// deleteJob 	 Handles the deletion of an existing intake job.
+// @Summary      Delete Intake Job
+// @Description  Deletes an existing intake job by its ID.
+// @Tags         intake
+// @Produce      json
+// @Param        id   path      string  true  "Intake Job ID"
+// @Success      200  {object}  map[string]string "Job Deleted"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job/{id} [delete]
+func (h *Handler) deleteJob(c *gin.Context) {
+	//TODO: Implement the delete job handler
+}
+
+// queueJobs 	 Queues all the active intake jobs.
+// @Summary      Queue Active Intake Jobs
+// @Description  Queues all the active intake jobs for processing.
+// @Tags         intake
+// @Produce      json
+// @Success      200  {object}  map[string]string "Jobs Queued"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/jobs/queue [post]
+func (h *Handler) queueJobs(c *gin.Context) {
+	//TODO: Implement queue job handler
 }
