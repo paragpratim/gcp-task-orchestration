@@ -14,141 +14,7 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {
-        "/dataflow/flex/submit": {
-            "post": {
-                "description": "Accepts parameters to start or stop a Dataflow Flex job via the orchestrator.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "dataflow"
-                ],
-                "summary": "Submit Dataflow Flex Job",
-                "parameters": [
-                    {
-                        "description": "Dataflow Job Parameters",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.DataflowRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "202": {
-                        "description": "Accepted",
-                        "schema": {
-                            "$ref": "#/definitions/models.DataflowResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/health": {
-            "get": {
-                "description": "Responds with an OK status if the service is running.",
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Health check",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "models.DataflowRequest": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "description": "e.g., \"start\", \"stop\"",
-                    "type": "string"
-                },
-                "container_image": {
-                    "type": "string"
-                },
-                "enable_streaming_engine": {
-                    "type": "boolean"
-                },
-                "ip_configuration": {
-                    "type": "string"
-                },
-                "is_streaming": {
-                    "type": "boolean"
-                },
-                "job_name": {
-                    "type": "string"
-                },
-                "max_workers": {
-                    "type": "integer"
-                },
-                "num_workers": {
-                    "type": "integer"
-                },
-                "parameters": {
-                    "description": "Additional parameters for the pipeline",
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "region": {
-                    "type": "string"
-                },
-                "service_account_email": {
-                    "type": "string"
-                },
-                "staging_location": {
-                    "type": "string"
-                },
-                "stop_mode": {
-                    "description": "e.g., \"drain\", \"cancel\"",
-                    "type": "string"
-                },
-                "subnetwork": {
-                    "type": "string"
-                },
-                "temp_location": {
-                    "type": "string"
-                },
-                "zone": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.DataflowResponse": {
-            "type": "object",
-            "properties": {
-                "job_id": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        }
-    }
+    "paths": {}
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
@@ -158,7 +24,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "GCP Task Orchestration API",
-	Description:      "This is a server for the GCP Task Orchestration service.",
+	Description:      "This is a server for the GCP Task Orchestration api.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

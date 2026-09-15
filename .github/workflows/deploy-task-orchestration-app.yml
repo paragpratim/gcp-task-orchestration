@@ -76,7 +76,7 @@ jobs:
           args: --timeout=5m
 
       - name: Build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/service
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
         working-directory: orchestrator-service
 
       - name: Test

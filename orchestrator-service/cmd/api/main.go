@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"orchestrator/internal/api"
-	initpkg "orchestrator/internal/core/init"
 	"orchestrator/internal/gcp"
 	"orchestrator/internal/logger"
 	"os"
@@ -17,7 +16,7 @@ import (
 
 // @title           GCP Task Orchestration API
 // @version         1.0
-// @description     This is a server for the GCP Task Orchestration service.
+// @description     This is a server for the GCP Task Orchestration api.
 
 // @BasePath  /
 func main() {
@@ -31,9 +30,9 @@ func main() {
 	baseURL := os.Getenv("QUEUE_BASE_URL")
 	saEmail := os.Getenv("QUEUE_SERVICE_ACCOUNT")
 
-	//if projectID == "" || baseURL == "" || saEmail == "" {
-	//	logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_BASE_URL, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
-	//}
+	if projectID == "" || baseURL == "" || saEmail == "" {
+		logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_BASE_URL, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
+	}
 
 	// 1. Initialize complete infrastructure layer in one step
 	infra, err := gcp.NewPlatform(ctx, projectID, baseURL, saEmail)
@@ -42,17 +41,10 @@ func main() {
 	}
 	defer infra.Close() // Automatically clean up everything on exit
 
-	// 2. Assemble business domains & handlers
-	initHandler := initpkg.NewHandler(initpkg.NewService(infra.Firestore, infra.CloudTasks))
-	//gcsHandler := gcs.NewHandler(gcs.NewService(infra.Firestore, infra.CloudTasks, infra.Storage))
-	//bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Firestore, infra.CloudTasks, infra.BigQuery))
-	//dfHandler := dataflow.NewHandler(dataflow.NewService(infra.Firestore, infra.CloudTasks))
-
-	// 3. Set up and spin up HTTP network server
+	// 2. Set up and spin up HTTP network server
 	srv := &http.Server{
-		Addr: ":8080",
-		//Handler:      router.SetupRouter(initHandler, gcsHandler, bqHandler, dfHandler),
-		Handler:      api.SetupRouter(initHandler),
+		Addr:         ":8080",
+		Handler:      api.SetupRouter(infra),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
@@ -64,7 +56,7 @@ func main() {
 		}
 	}()
 
-	// 4. Clean, blocking OS signal termination handler
+	// 3. Clean, blocking OS signal termination handler
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

@@ -1,4 +1,4 @@
-package init
+package intake
 
 import "github.com/gin-gonic/gin"
 
@@ -11,12 +11,12 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.GET("/init/health", h.AppHealth)
+	rg.GET("/intake/health", h.AppHealth)
 }
 
 // AppHealth 	 Responds to health check requests.
 // @Summary      Health check
-// @Description  Responds with an OK status if the service is running.
+// @Description  Responds with an OK status if the api is running.
 // @Tags         health
 // @Produce      plain
 // @Success      200  {string}  string  "OK"
