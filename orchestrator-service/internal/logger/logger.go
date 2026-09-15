@@ -33,3 +33,8 @@ func Error(msg string, args ...any) {
 func Debug(msg string, args ...any) {
 	slog.Debug(msg, args...)
 }
+
+func Fatal(msg string, args ...any) {
+	slog.Error(msg, args...)
+	os.Exit(1)
+}
