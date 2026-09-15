@@ -17,6 +17,7 @@ tasks:
       - task: lint
       - task: test
       - task: build
+      - task: swagger
       - docker compose up -d --build
 
   down:
