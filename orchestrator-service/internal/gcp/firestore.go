@@ -1,4 +1,4 @@
-package db
+package gcp
 
 import (
 	"context"
@@ -7,25 +7,25 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
-type Repository[T any] interface {
+type DocumentRepository[T any] interface {
 	Put(ctx context.Context, collection, id string, data T) error
 	Get(ctx context.Context, collection, id string) (*T, error)
 	Close() error
 }
 
-type Client[T any] struct {
+type FirestoreRepository[T any] struct {
 	firestoreClient *firestore.Client
 }
 
-func NewClient[T any](ctx context.Context, projectId string) (*Client[T], error) {
+func NewFirestoreRepository[T any](ctx context.Context, projectId string) (*FirestoreRepository[T], error) {
 	client, err := firestore.NewClient(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to Create firestore client: %w", err)
 	}
-	return &Client[T]{firestoreClient: client}, nil
+	return &FirestoreRepository[T]{firestoreClient: client}, nil
 }
 
-func (c *Client[T]) Put(ctx context.Context, collection, id string, data T) error {
+func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) error {
 	_, err := c.firestoreClient.Collection(collection).Doc(id).Set(ctx, data, firestore.MergeAll)
 	if err != nil {
 		return fmt.Errorf("failed to Put Document to Firestore: %w", err)
@@ -33,7 +33,7 @@ func (c *Client[T]) Put(ctx context.Context, collection, id string, data T) erro
 	return nil
 }
 
-func (c *Client[T]) Get(ctx context.Context, collection, id string) (*T, error) {
+func (c *FirestoreRepository[T]) Get(ctx context.Context, collection, id string) (*T, error) {
 	doc, err := c.firestoreClient.Collection(collection).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to Get Document from Firestore: %w", err)
@@ -45,6 +45,6 @@ func (c *Client[T]) Get(ctx context.Context, collection, id string) (*T, error) 
 	return &data, nil
 }
 
-func (c *Client[T]) Close() error {
+func (c *FirestoreRepository[T]) Close() error {
 	return c.firestoreClient.Close()
 }

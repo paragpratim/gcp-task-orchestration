@@ -1,4 +1,4 @@
-package queue
+package gcp
 
 import (
 	"context"
@@ -14,25 +14,25 @@ type TaskRepository interface {
 	Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error
 	Close() error
 }
-type Client struct {
+type CloudTasksRepository struct {
 	tasksClient         *cloudtasks.Client
 	baseURL             string
 	serviceAccountEmail string
 }
 
-func NewClient(ctx context.Context, baseURL string, serviceAccountEmail string) (*Client, error) {
+func NewCloudTasksRepository(ctx context.Context, baseURL string, serviceAccountEmail string) (*CloudTasksRepository, error) {
 	client, err := cloudtasks.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task client: %w", err)
 	}
-	return &Client{
+	return &CloudTasksRepository{
 		tasksClient:         client,
 		baseURL:             baseURL,
 		serviceAccountEmail: serviceAccountEmail,
 	}, nil
 }
 
-func (c *Client) Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
+func (c *CloudTasksRepository) Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
 	fullURL := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	task := &taskspb.Task{
@@ -70,6 +70,6 @@ func (c *Client) Put(ctx context.Context, queuePath string, method taskspb.HttpM
 	return nil
 }
 
-func (c *Client) Close() error {
+func (c *CloudTasksRepository) Close() error {
 	return c.tasksClient.Close()
 }
