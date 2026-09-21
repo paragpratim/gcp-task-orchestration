@@ -21,7 +21,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "GCP Task Orchestration API",
 	Description:      "This is a server for the GCP Task Orchestration api.",

@@ -1,6 +1,11 @@
 package intake
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"orchestrator/internal/models"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler struct {
 	service *Service
@@ -27,7 +32,12 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 // @Success      200  {string}  string  "OK"
 // @Router       /health [get]
 func (h *Handler) appHealth(c *gin.Context) {
-	h.service.HealthCheck(c.Request.Context())
+	err := h.service.HealthCheck(c)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Service Unavailable")
+		return
+	}
+	c.String(http.StatusOK, "OK")
 }
 
 // createJob 	 Handles the creation of a new intake job.
@@ -36,12 +46,25 @@ func (h *Handler) appHealth(c *gin.Context) {
 // @Tags         intake
 // @Accept       json
 // @Produce      json
-// @Param        request  body      intake.IntakeJobRequest  true  "Intake Job Request Payload"
+// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Request Payload"
 // @Success      201  {object}  map[string]string "Job Created"
 // @Failure      400  {object}  map[string]string "Bad Request"
 // @Router       /intake/job [post]
 func (h *Handler) createJob(c *gin.Context) {
-	//TODO: Implement the tasks handler
+	var req models.IntakeJobDefinition
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
+		return
+	}
+
+	resp, err := h.service.CreateIntakeJob(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, resp)
 }
 
 // updateJob 	 Handles the update of an existing intake job.
@@ -50,12 +73,25 @@ func (h *Handler) createJob(c *gin.Context) {
 // @Tags         intake
 // @Accept       json
 // @Produce      json
-// @Param        request  body      intake.IntakeJobRequest  true  "Intake Job Update Payload"
+// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Update Payload"
 // @Success      200  {object}  map[string]string "Job Updated"
 // @Failure      400  {object}  map[string]string "Bad Request"
 // @Router       /intake/job [put]
 func (h *Handler) updateJob(c *gin.Context) {
-	//TODO: Implement the update job handler
+	var req models.IntakeJobDefinition
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
+		return
+	}
+
+	resp, err := h.service.UpdateIntakeJob(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // deleteJob 	 Handles the deletion of an existing intake job.
@@ -68,17 +104,43 @@ func (h *Handler) updateJob(c *gin.Context) {
 // @Failure      400  {object}  map[string]string "Bad Request"
 // @Router       /intake/job/{id} [delete]
 func (h *Handler) deleteJob(c *gin.Context) {
-	//TODO: Implement the delete job handler
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Job tracking identifier 'id' is required"})
+		return
+	}
+
+	if err := h.service.DeleteIntakeJob(c, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Job Deleted", "id": id})
 }
 
 // queueJobs 	 Queues all the active intake jobs.
 // @Summary      Queue Active Intake Jobs
 // @Description  Queues all the active intake jobs for processing.
 // @Tags         intake
+// @Accept       json
 // @Produce      json
+// @Param        request  body      models.IntakeJobDefinition  true  "Queue Jobs Request Payload"
 // @Success      200  {object}  map[string]string "Jobs Queued"
 // @Failure      400  {object}  map[string]string "Bad Request"
 // @Router       /intake/jobs/queue [post]
 func (h *Handler) queueJobs(c *gin.Context) {
-	//TODO: Implement queue job handler
+	var req models.IntakeJobDefinition
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
+		return
+	}
+
+	resp, err := h.service.QueueActiveJobs(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }

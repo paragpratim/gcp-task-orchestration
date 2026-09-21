@@ -10,6 +10,8 @@ import (
 type DocumentRepository[T any] interface {
 	Put(ctx context.Context, collection, id string, data T) error
 	Get(ctx context.Context, collection, id string) (*T, error)
+	GetAll(ctx context.Context, collection string) (*[]T, error)
+	Delete(ctx context.Context, collection, id string) error
 	Close() error
 }
 
@@ -43,6 +45,36 @@ func (c *FirestoreRepository[T]) Get(ctx context.Context, collection, id string)
 		return nil, fmt.Errorf("failed to unmarshall Document: %w", err)
 	}
 	return &data, nil
+}
+
+func (c *FirestoreRepository[T]) GetAll(ctx context.Context, collection string) (*[]T, error) {
+	iter := c.firestoreClient.Collection(collection).Documents(ctx)
+	defer iter.Stop()
+
+	var results []T
+	for {
+		doc, err := iter.Next()
+		if err != nil {
+			if err.Error() == "iterator done" {
+				break
+			}
+			return nil, fmt.Errorf("failed to iterate Documents from Firestore: %w", err)
+		}
+		var data T
+		if err := doc.DataTo(&data); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall Document: %w", err)
+		}
+		results = append(results, data)
+	}
+	return &results, nil
+}
+
+func (c *FirestoreRepository[T]) Delete(ctx context.Context, collection, id string) error {
+	_, err := c.firestoreClient.Collection(collection).Doc(id).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to Delete Document from Firestore: %w", err)
+	}
+	return nil
 }
 
 func (c *FirestoreRepository[T]) Close() error {
