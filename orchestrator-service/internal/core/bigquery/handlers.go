@@ -11,9 +11,10 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.POST("/bigquery/job", h.createBQJob)
-	rg.GET("/bigquery/job/:id", h.getBQJob)
-	rg.GET("/bigquery/region", h.checkBQRegion)
+	bigquery := rg.Group("/bigquery")
+	bigquery.POST("/job", h.createBQJob)
+	bigquery.GET("/job/:id", h.getBQJob)
+	bigquery.GET("/region", h.checkBQRegion)
 }
 
 // createBQJob 	 Creates a new BigQuery job.

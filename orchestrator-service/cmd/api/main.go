@@ -18,7 +18,7 @@ import (
 // @version         1.0
 // @description     This is a server for the GCP Task Orchestration api.
 
-// @BasePath  /
+// @BasePath 		/api/v1
 func main() {
 	// Initialize the structured logger
 	logger.Init()

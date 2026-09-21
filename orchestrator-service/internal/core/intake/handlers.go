@@ -11,11 +11,12 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.GET("/intake/health", h.appHealth)
-	rg.POST("/intake/job", h.createJob)
-	rg.PUT("/intake/job", h.updateJob)
-	rg.DELETE("/intake/job/:id", h.deleteJob)
-	rg.POST("/intake/jobs/queue", h.queueJobs)
+	intake := rg.Group("/intake")
+	intake.GET("/health", h.appHealth)
+	intake.POST("/job", h.createJob)
+	intake.PUT("/job", h.updateJob)
+	intake.DELETE("/job/:id", h.deleteJob)
+	intake.POST("/jobs/queue", h.queueJobs)
 }
 
 // appHealth 	 Responds to health check requests.
