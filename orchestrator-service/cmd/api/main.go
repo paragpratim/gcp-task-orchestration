@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"orchestrator/internal/api"
+	"orchestrator/internal/config"
 	"orchestrator/internal/gcp"
 	"orchestrator/internal/logger"
 	"os"
@@ -23,19 +24,18 @@ func main() {
 	// Initialize the structured logger
 	logger.Init()
 
+	// Load application configuration from environment variables
+	appCfg := config.LoadConfig()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	projectID := os.Getenv("GCP_PROJECT_ID")
-	baseURL := os.Getenv("QUEUE_BASE_URL")
-	saEmail := os.Getenv("QUEUE_SERVICE_ACCOUNT")
-
-	if projectID == "" || baseURL == "" || saEmail == "" {
+	if appCfg.ProjectID == "" || appCfg.BaseURL == "" || appCfg.ServiceAccountEmail == "" {
 		logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_BASE_URL, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
 	}
 
 	// 1. Initialize complete infrastructure layer in one step
-	infra, err := gcp.NewPlatform(ctx, projectID, baseURL, saEmail)
+	infra, err := gcp.NewPlatform(ctx, appCfg.ProjectID, appCfg.BaseURL, appCfg.ServiceAccountEmail)
 	if err != nil {
 		logger.Fatal("Critical platform initialization failure: %v", err)
 	}
@@ -43,14 +43,14 @@ func main() {
 
 	// 2. Set up and spin up HTTP network server
 	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      api.SetupRouter(infra),
+		Addr:         ":" + appCfg.Port,
+		Handler:      api.SetupRouter(infra, appCfg),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {
-		log.Println("Orchestrator API spinning up on port :8080")
+		log.Printf("Orchestrator API spinning up on port %s", appCfg.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal("Server crash: %v", err)
 		}

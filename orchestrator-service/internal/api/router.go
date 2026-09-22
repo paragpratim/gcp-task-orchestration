@@ -1,6 +1,7 @@
 package api
 
 import (
+	"orchestrator/internal/config"
 	"orchestrator/internal/core/bigquery"
 	"orchestrator/internal/core/dataflow"
 	"orchestrator/internal/core/gcs"
@@ -12,11 +13,15 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRouter(infra *gcp.Platform) *gin.Engine {
+func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	initHandler := intake.NewHandler(intake.NewService(infra.Firestore, infra.CloudTasks))
+	initHandler := intake.NewHandler(intake.NewService(infra.Firestore, infra.CloudTasks, intake.Config{
+		JobsCollection:   appCfg.IntakeJobsCollection,
+		StatusCollection: appCfg.JobStatusCollection,
+		QueueName:        appCfg.IntakeQueueName,
+	}))
 	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Firestore, infra.CloudTasks, infra.Storage))
 	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Firestore, infra.CloudTasks, infra.BigQuery))
 	dfHandler := dataflow.NewHandler(dataflow.NewService(infra.Firestore, infra.CloudTasks))
