@@ -3,6 +3,7 @@ package intake
 import (
 	"net/http"
 	"orchestrator/internal/models"
+	"orchestrator/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,12 +17,11 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	intake := rg.Group("/intake")
-	intake.GET("/health", h.appHealth)
-	intake.POST("/job", h.createJob)
-	intake.PUT("/job", h.updateJob)
-	intake.DELETE("/job/:id", h.deleteJob)
-	intake.POST("/jobs/queue", h.queueJobs)
+	rg.GET(routes.IntakeHealth, h.appHealth)
+	rg.POST(routes.IntakeJobCreate, h.createJob)
+	rg.PUT(routes.IntakeJobUpdate, h.updateJob)
+	rg.DELETE(routes.IntakeJobDelete, h.deleteJob)
+	rg.POST(routes.IntakeJobsQueue, h.queueJobs)
 }
 
 // appHealth 	 Responds to health check requests.

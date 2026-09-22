@@ -1,6 +1,10 @@
 package bigquery
 
-import "github.com/gin-gonic/gin"
+import (
+	"orchestrator/internal/routes"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler struct {
 	service *Service
@@ -11,10 +15,9 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	bigquery := rg.Group("/bigquery")
-	bigquery.POST("/job", h.createBQJob)
-	bigquery.GET("/job/:id", h.getBQJob)
-	bigquery.GET("/region", h.checkBQRegion)
+	rg.POST(routes.BigQueryLoadJob, h.createBQJob)
+	rg.GET(routes.BigQueryLoadJob+"/:id", h.getBQJob)
+	rg.GET("/bigquery/region", h.checkBQRegion)
 }
 
 // createBQJob 	 Creates a new BigQuery job.

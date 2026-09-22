@@ -1,6 +1,12 @@
 package gcs
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"orchestrator/internal/models"
+	"orchestrator/internal/routes"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Handler struct {
 	service *Service
@@ -11,36 +17,58 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	gcs := rg.Group("/gcs")
-	gcs.GET("/files", h.listFiles)
-	gcs.POST("/files/move", h.moveFiles)
+	rg.POST(routes.GCSListFiles, h.listFiles)
+	rg.POST(routes.GCSMoveFiles, h.moveFiles)
 }
 
-// listFiles 	 Lists the files in a specific GCS bucket.
-// @Summary      List GCS files
-// @Description  Lists the files in a specific GCS bucket.
-// @Tags         gcs
-// @Produce      json
-// @Param        bucket   query      string  true  "GCS Bucket Name"
-// @Success      200  {object}  map[string]interface{}
-// @Failure      400  {object}  map[string]interface{}
-// @Router       /gcs/files [get]
-func (h *Handler) listFiles(c *gin.Context) {
-	//TODO: Implement the list GCS handler Implement the list GCS handler
-}
-
-// moveFiles 	 Moves files within a specific GCS bucket.
-// @Summary      Move GCS files
-// @Description  Moves files within a specific GCS bucket.
+// listFiles 	 Handles the initial step of the workflow loop by aggregating file paths matching patterns.
+// @Summary      List and Track GCS Files
+// @Description  Accepts a minimal task payload, verifies configuration status, aggregates matching files via globs, and triggers the move stage.
 // @Tags         gcs
 // @Accept       json
 // @Produce      json
-// @Param        source_bucket   query      string  true  "Source GCS Bucket Name"
-// @Param        destination_bucket   query      string  true  "Destination GCS Bucket Name"
-// @Param        files   query      []string  true  "Files to move"
-// @Success      200  {object}  map[string]interface{}
-// @Failure      400  {object}  map[string]interface{}
+// @Param        request body      models.PipelineTaskPayload true "Lean Pipeline Transport Payload"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Router       /gcs/files/list [post]
+func (h *Handler) listFiles(c *gin.Context) {
+	var task models.PipelineTaskPayload
+
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task payload schema: " + err.Error()})
+		return
+	}
+
+	if err := h.service.ListFiles(c.Request.Context(), task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "File discovery complete; proceeding to move files stage"})
+}
+
+// moveFiles 	 Archives matching files to a processed directory and queues the downstream BigQuery load job.
+// @Summary      Move Files and Queue Ingestion
+// @Description  Relocates discovered files to a processed folder boundary, updates metadata structures, and schedules the BigQuery loading phase.
+// @Tags         gcs
+// @Accept       json
+// @Produce      json
+// @Param        request body      models.PipelineTaskPayload true "Lean Pipeline Transport Payload"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
 // @Router       /gcs/files/move [post]
 func (h *Handler) moveFiles(c *gin.Context) {
-	//TODO: Implement the move GCS handler
+	var task models.PipelineTaskPayload
+
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task payload schema: " + err.Error()})
+		return
+	}
+
+	if err := h.service.MoveFiles(c.Request.Context(), task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Files archived successfully; BigQuery ingestion task successfully scheduled"})
 }

@@ -7,6 +7,7 @@ import (
 	"orchestrator/internal/core/gcs"
 	"orchestrator/internal/core/intake"
 	"orchestrator/internal/gcp"
+	"orchestrator/internal/routes"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -18,15 +19,21 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router.Use(gin.Logger(), gin.Recovery())
 
 	initHandler := intake.NewHandler(intake.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, intake.Config{
-		JobsCollection:   appCfg.IntakeJobsCollection,
+		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
-		QueueName:        appCfg.IntakeQueueName,
+		IntakeQueueName:  appCfg.IntakeQueueName,
 	}))
-	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Firestore, infra.CloudTasks, infra.Storage))
+	gcsHandler := gcs.NewHandler(gcs.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, infra.Storage, gcs.Config{
+		JobsCollection:   appCfg.JobsCollection,
+		StatusCollection: appCfg.JobStatusCollection,
+		GcsQueueName:     appCfg.GcsQueueName,
+		BqQueueName:      appCfg.BqQueueName,
+		IntakeQueueName:  appCfg.IntakeQueueName,
+	}))
 	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Firestore, infra.CloudTasks, infra.BigQuery))
 	dfHandler := dataflow.NewHandler(dataflow.NewService(infra.Firestore, infra.CloudTasks))
 
-	v1 := router.Group("/api/v1")
+	v1 := router.Group(routes.APIPrefix)
 	{
 		initHandler.RegisterRoutes(v1)
 		gcsHandler.RegisterRoutes(v1)

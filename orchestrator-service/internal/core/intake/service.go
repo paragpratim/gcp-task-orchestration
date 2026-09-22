@@ -6,6 +6,7 @@ import (
 	"orchestrator/internal/gcp"
 	"orchestrator/internal/logger"
 	"orchestrator/internal/models"
+	"orchestrator/internal/routes"
 	"time"
 
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
@@ -16,7 +17,7 @@ import (
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
-	QueueName        string
+	IntakeQueueName  string
 }
 
 type Service struct {
@@ -154,7 +155,7 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			return nil, fmt.Errorf("failed lean task network serialization for job %s: %w", job.ID, err)
 		}
 
-		err = s.taskQueueRepo.Put(ctx, s.cfg.QueueName, taskspb.HttpMethod_POST, "", payloadBytes, 0)
+		err = s.taskQueueRepo.Put(ctx, s.cfg.IntakeQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), payloadBytes, 0)
 		if err != nil {
 			return nil, fmt.Errorf("queue execution aborted at task dispatch phase for job %s: %w", job.ID, err)
 		}
