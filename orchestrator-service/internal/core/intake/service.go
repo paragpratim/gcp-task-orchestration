@@ -20,14 +20,16 @@ type Config struct {
 }
 
 type Service struct {
-	firestoreRepo gcp.DocumentRepository[any]
+	jobsRepo      gcp.DocumentRepository[models.IntakeJobDefinition]
+	statusRepo    gcp.DocumentRepository[models.JobStatus]
 	taskQueueRepo gcp.TaskRepository
 	cfg           Config
 }
 
-func NewService(fs gcp.DocumentRepository[any], tasks gcp.TaskRepository, cfg Config) *Service {
+func NewService(jobsRepo gcp.DocumentRepository[models.IntakeJobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, cfg Config) *Service {
 	return &Service{
-		firestoreRepo: fs,
+		jobsRepo:      jobsRepo,
+		statusRepo:    statusRepo,
 		taskQueueRepo: tasks,
 		cfg:           cfg,
 	}
@@ -46,7 +48,7 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 	jobDefinition.CreatedAt = time.Now().UTC()
 	jobDefinition.UpdatedAt = time.Now().UTC()
 
-	err := s.firestoreRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
+	err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist initial intake state: %w", err)
 	}
@@ -59,7 +61,7 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 		return nil, fmt.Errorf("cannot update a job without a valid transaction identifier 'id'")
 	}
 
-	existingJob, err := s.firestoreRepo.Get(ctx, s.cfg.JobsCollection, jobDefinition.ID)
+	existingJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, jobDefinition.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve job context before mutation: %w", err)
 	}
@@ -69,7 +71,7 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 
 	jobDefinition.UpdatedAt = time.Now().UTC()
 
-	err = s.firestoreRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
+	err = s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to overwrite persistent intake state: %w", err)
 	}
@@ -79,7 +81,7 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 
 func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
 
-	existingJob, err := s.firestoreRepo.Get(ctx, s.cfg.JobsCollection, id)
+	existingJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
 	if err != nil {
 		return fmt.Errorf("failed to locate target job before removal tracking: %w", err)
 	}
@@ -87,7 +89,7 @@ func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
 		return fmt.Errorf("cannot delete job: tracking target with id %s was not found", id)
 	}
 
-	err = s.firestoreRepo.Delete(ctx, s.cfg.JobsCollection, id)
+	err = s.jobsRepo.Delete(ctx, s.cfg.JobsCollection, id)
 	if err != nil {
 		return fmt.Errorf("failed to completely purge intake job record: %w", err)
 	}
@@ -100,46 +102,36 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 	var jobStatuses []models.JobStatus
 
 	if jobDefinition.ID != "" {
-		retrieved, err := s.firestoreRepo.Get(ctx, s.cfg.JobsCollection, jobDefinition.ID)
+		retrieved, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, jobDefinition.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed verifying dispatch target: %w", err)
 		}
 
 		if retrieved != nil {
-			if targetJob, ok := any(retrieved).(models.IntakeJobDefinition); ok {
-				jobsToQueue = append(jobsToQueue, targetJob)
-			} else if targetJob, ok := any(retrieved).(*models.IntakeJobDefinition); ok && targetJob != nil {
-				jobsToQueue = append(jobsToQueue, *targetJob)
-			} else {
-				return nil, fmt.Errorf("repository returned an unexpected type structure for job %s", jobDefinition.ID)
-			}
+			jobsToQueue = append(jobsToQueue, *retrieved)
 		}
 	} else {
-		allJobs, err := s.firestoreRepo.GetAll(ctx, s.cfg.JobsCollection)
+		allJobs, err := s.jobsRepo.GetAll(ctx, s.cfg.JobsCollection)
 		if err != nil {
 			return nil, fmt.Errorf("failed to aggregate jobs for queue migration: %w", err)
 		}
 
 		if allJobs != nil {
-			for _, item := range *allJobs {
-				if targetJob, ok := item.(models.IntakeJobDefinition); ok {
-					jobsToQueue = append(jobsToQueue, targetJob)
-				} else if targetJob, ok := item.(*models.IntakeJobDefinition); ok && targetJob != nil {
-					jobsToQueue = append(jobsToQueue, *targetJob)
-				}
-			}
+			jobsToQueue = append(jobsToQueue, *allJobs...)
 		}
 	}
 
 	for _, job := range jobsToQueue {
-		taskPayload, err := json.Marshal(job)
+
+		existingJob, err := s.statusRepo.Get(ctx, s.cfg.StatusCollection, job.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed task data serialization for job %s: %w", job.ID, err)
+			return nil, fmt.Errorf("failed checkpoint tracking verification for job %s: %w", job.ID, err)
 		}
 
-		err = s.taskQueueRepo.Put(ctx, s.cfg.QueueName, taskspb.HttpMethod_POST, "", taskPayload, 0)
-		if err != nil {
-			return nil, fmt.Errorf("queue execution aborted at job %s: %w", job.ID, err)
+		if existingJob != nil {
+			logger.Warn(fmt.Sprintf("Concurrency Guard: Job %s is already registered in the status store. Skipping queue dispatch.", job.ID))
+			jobStatuses = append(jobStatuses, *existingJob)
+			continue // Skip submitting this job to Cloud Tasks completely
 		}
 
 		jobStatus := models.JobStatus{
@@ -149,12 +141,25 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			Metadata:  map[string]any{},
 		}
 
-		jobStatuses = append(jobStatuses, jobStatus)
-
-		err = s.firestoreRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
+		err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
 		if err != nil {
 			return nil, fmt.Errorf("failed to persist job status for job %s: %w", job.ID, err)
 		}
+
+		taskPayload := models.PipelineTaskPayload{
+			JobID: job.ID,
+		}
+		payloadBytes, err := json.Marshal(taskPayload)
+		if err != nil {
+			return nil, fmt.Errorf("failed lean task network serialization for job %s: %w", job.ID, err)
+		}
+
+		err = s.taskQueueRepo.Put(ctx, s.cfg.QueueName, taskspb.HttpMethod_POST, "", payloadBytes, 0)
+		if err != nil {
+			return nil, fmt.Errorf("queue execution aborted at task dispatch phase for job %s: %w", job.ID, err)
+		}
+
+		jobStatuses = append(jobStatuses, jobStatus)
 	}
 
 	return &jobStatuses, nil

@@ -2,9 +2,13 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"cloud.google.com/go/firestore"
+	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type DocumentRepository[T any] interface {
@@ -27,6 +31,10 @@ func NewFirestoreRepository[T any](ctx context.Context, projectId string) (*Fire
 	return &FirestoreRepository[T]{firestoreClient: client}, nil
 }
 
+func NewTypedFirestoreRepository[T any](client *firestore.Client) *FirestoreRepository[T] {
+	return &FirestoreRepository[T]{firestoreClient: client}
+}
+
 func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) error {
 	_, err := c.firestoreClient.Collection(collection).Doc(id).Set(ctx, data, firestore.MergeAll)
 	if err != nil {
@@ -38,6 +46,9 @@ func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string,
 func (c *FirestoreRepository[T]) Get(ctx context.Context, collection, id string) (*T, error) {
 	doc, err := c.firestoreClient.Collection(collection).Doc(id).Get(ctx)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to Get Document from Firestore: %w", err)
 	}
 	var data T
@@ -55,7 +66,7 @@ func (c *FirestoreRepository[T]) GetAll(ctx context.Context, collection string) 
 	for {
 		doc, err := iter.Next()
 		if err != nil {
-			if err.Error() == "iterator done" {
+			if errors.Is(err, iterator.Done) {
 				break
 			}
 			return nil, fmt.Errorf("failed to iterate Documents from Firestore: %w", err)

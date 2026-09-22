@@ -21,11 +21,13 @@ func (e ExecutionStatus) String() string {
 }
 
 type JobStatus struct {
-	ExecutionID string          `json:"execution_id" firestore:"execution_id"` // Matches your service architecture
-	JobID       string          `json:"job_id" firestore:"job_id"`
-	Status      ExecutionStatus `json:"status" firestore:"status"` // Replaced raw string with Enum type
-	Message     string          `json:"message" firestore:"message"`
-	CreatedAt   time.Time       `json:"created_at" firestore:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at" firestore:"updated_at"`
-	Metadata    map[string]any  `json:"metadata,omitempty" firestore:"metadata,omitempty"`
+	JobID     string          `json:"job_id" firestore:"job_id"`
+	Status    ExecutionStatus `json:"status" firestore:"status"` // Holds the ExecutionStatus string
+	Message   string          `json:"message" firestore:"message"`
+	UpdatedAt time.Time       `json:"updated_at" firestore:"updated_at"`
+	Metadata  map[string]any  `json:"metadata,omitempty" firestore:"metadata,omitempty"`
+}
+
+type PipelineTaskPayload struct {
+	JobID string `json:"job_id" binding:"required"`
 }

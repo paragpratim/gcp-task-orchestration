@@ -3,10 +3,14 @@ package gcp
 import (
 	"context"
 	"fmt"
+
+	"orchestrator/internal/models"
 )
 
 type Platform struct {
 	Firestore  *FirestoreRepository[any]
+	IntakeJobs *FirestoreRepository[models.IntakeJobDefinition]
+	JobStatus  *FirestoreRepository[models.JobStatus]
 	CloudTasks *CloudTasksRepository
 	Storage    *StorageRepository
 	BigQuery   *BigQueryRepository
@@ -41,6 +45,8 @@ func NewPlatform(ctx context.Context, projectID, baseURL, saEmail string) (*Plat
 
 	return &Platform{
 		Firestore:  fsRepo,
+		IntakeJobs: NewTypedFirestoreRepository[models.IntakeJobDefinition](fsRepo.firestoreClient),
+		JobStatus:  NewTypedFirestoreRepository[models.JobStatus](fsRepo.firestoreClient),
 		CloudTasks: tasksRepo,
 		Storage:    gcsRepo,
 		BigQuery:   bqRepo,

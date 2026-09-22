@@ -17,7 +17,7 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
-	initHandler := intake.NewHandler(intake.NewService(infra.Firestore, infra.CloudTasks, intake.Config{
+	initHandler := intake.NewHandler(intake.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, intake.Config{
 		JobsCollection:   appCfg.IntakeJobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
 		QueueName:        appCfg.IntakeQueueName,
