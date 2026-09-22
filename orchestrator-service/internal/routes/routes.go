@@ -18,7 +18,9 @@ const (
 
 	// BigQuery endpoints
 
-	BigQueryLoadJob = "/bigquery/job"
+	BigQueryLoadJobCreate = "/bigquery/job/create"
+	BigQueryLoadJobCheck  = "/bigquery/job/check"
+	BigQueryRegionCheck   = "/bigquery/region/check"
 )
 
 func Full(path string) string {

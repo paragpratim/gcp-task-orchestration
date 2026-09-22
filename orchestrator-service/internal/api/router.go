@@ -30,7 +30,11 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 		BqQueueName:      appCfg.BqQueueName,
 		IntakeQueueName:  appCfg.IntakeQueueName,
 	}))
-	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Firestore, infra.CloudTasks, infra.BigQuery))
+	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, infra.BigQuery, bigquery.Config{
+		JobsCollection:   appCfg.JobsCollection,
+		StatusCollection: appCfg.JobStatusCollection,
+		BqQueueName:      appCfg.BqQueueName,
+	}))
 	dfHandler := dataflow.NewHandler(dataflow.NewService(infra.Firestore, infra.CloudTasks))
 
 	v1 := router.Group(routes.APIPrefix)

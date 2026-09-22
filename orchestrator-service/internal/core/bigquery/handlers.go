@@ -1,6 +1,9 @@
 package bigquery
 
 import (
+	"context"
+	"net/http"
+	"orchestrator/internal/models"
 	"orchestrator/internal/routes"
 
 	"github.com/gin-gonic/gin"
@@ -15,9 +18,25 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.POST(routes.BigQueryLoadJob, h.createBQJob)
-	rg.GET(routes.BigQueryLoadJob+"/:id", h.getBQJob)
-	rg.GET("/bigquery/region", h.checkBQRegion)
+	rg.POST(routes.BigQueryLoadJobCreate, h.createBQJob)
+	rg.POST(routes.BigQueryLoadJobCheck, h.getBQJob)
+	rg.POST(routes.BigQueryRegionCheck, h.checkBQRegion)
+}
+
+func (h *Handler) handleTask(c *gin.Context, successMsg string, action func(ctx context.Context, task models.PipelineTaskPayload) error) {
+	var task models.PipelineTaskPayload
+
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task payload schema: " + err.Error()})
+		return
+	}
+
+	if err := action(c.Request.Context(), task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": successMsg})
 }
 
 // createBQJob 	 Creates a new BigQuery job.
@@ -26,11 +45,12 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 // @Tags         bigquery
 // @Accept       json
 // @Produce      json
+// @Param        request body      models.PipelineTaskPayload true "Lean Pipeline Transport Payload"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
-// @Router       /bigquery/job [post]
+// @Router       /bigquery/job/create [post]
 func (h *Handler) createBQJob(c *gin.Context) {
-	//TODO: Implement the create BigQuery job handler
+	h.handleTask(c, "BigQuery load job creation triggered", h.service.CreateLoadJob)
 }
 
 // getBQJob 	 Retrieves the details of a specific BigQuery job.
@@ -38,12 +58,12 @@ func (h *Handler) createBQJob(c *gin.Context) {
 // @Description  Retrieves the details of a specific BigQuery job by its ID.
 // @Tags         bigquery
 // @Produce      json
-// @Param        id   path      string  true  "BigQuery Job ID"
+// @Param        request body      models.PipelineTaskPayload true "Lean Pipeline Transport Payload"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
-// @Router       /bigquery/job/{id} [get]
+// @Router       /bigquery/job/check [post]
 func (h *Handler) getBQJob(c *gin.Context) {
-	//TODO: Implement the get BigQuery job handler
+	h.handleTask(c, "BigQuery load job status check complete", h.service.CheckLoadJobStatus)
 }
 
 // checkBQRegion 	 Checks the availability of a specific BigQuery region.
@@ -51,10 +71,10 @@ func (h *Handler) getBQJob(c *gin.Context) {
 // @Description  Checks the availability of a specific BigQuery region.
 // @Tags         bigquery
 // @Produce      json
-// @Param        region   query      string  true  "BigQuery Region"
+// @Param        request body      models.PipelineTaskPayload true "Lean Pipeline Transport Payload"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
-// @Router       /bigquery/region [get]
+// @Router       /bigquery/region/check [post]
 func (h *Handler) checkBQRegion(c *gin.Context) {
-	//TODO: Implement the check BigQuery region handler
+	h.handleTask(c, "BigQuery dataset region check complete", h.service.CheckDatasetRegion)
 }

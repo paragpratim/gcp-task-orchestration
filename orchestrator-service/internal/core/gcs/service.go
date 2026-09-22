@@ -268,9 +268,9 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 		return nil
 	}
 
-	err = s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJob), payloadBytes, 10*time.Second)
+	err = s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCreate), payloadBytes, 10*time.Second)
 	if err != nil {
-		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, fmt.Sprintf("Failed routing ingestion block container down to bigquery task queue: %v", err))
+		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, fmt.Sprintf("Failed routing ingestion block container down to BigQuery task queue: %v", err))
 		return nil
 	}
 
