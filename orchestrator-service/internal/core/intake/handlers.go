@@ -2,6 +2,7 @@ package intake
 
 import (
 	"net/http"
+	"orchestrator/internal/logger"
 	"orchestrator/internal/models"
 	"orchestrator/internal/routes"
 
@@ -28,12 +29,14 @@ func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gi
 	var req models.IntakeJobDefinition
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Error("Failed to bind JSON payload", "ERROR", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
 		return
 	}
 
 	resp, err := action(c, req)
 	if err != nil {
+		logger.Error("Job execution failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,6 +54,7 @@ func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gi
 func (h *Handler) appHealth(c *gin.Context) {
 	err := h.service.HealthCheck(c)
 	if err != nil {
+		logger.Error("Health check failed", "ERROR", err)
 		c.String(http.StatusInternalServerError, "Service Unavailable")
 		return
 	}
@@ -101,11 +105,13 @@ func (h *Handler) updateJob(c *gin.Context) {
 func (h *Handler) deleteJob(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
+		logger.Error("Job deletion failed: missing job ID", "ERROR", nil)
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Job tracking identifier 'id' is required"})
 		return
 	}
 
 	if err := h.service.DeleteIntakeJob(c, id); err != nil {
+		logger.Error("Job deletion failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

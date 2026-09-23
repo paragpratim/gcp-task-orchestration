@@ -3,6 +3,7 @@ package bigquery
 import (
 	"context"
 	"net/http"
+	"orchestrator/internal/logger"
 	"orchestrator/internal/models"
 	"orchestrator/internal/routes"
 
@@ -27,11 +28,13 @@ func (h *Handler) handleTask(c *gin.Context, successMsg string, action func(ctx 
 	var task models.PipelineTaskPayload
 
 	if err := c.ShouldBindJSON(&task); err != nil {
+		logger.Error("Failed to bind JSON payload", "ERROR", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task payload schema: " + err.Error()})
 		return
 	}
 
 	if err := action(c.Request.Context(), task); err != nil {
+		logger.Error("Task Execution failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

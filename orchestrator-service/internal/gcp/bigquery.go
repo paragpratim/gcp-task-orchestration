@@ -23,7 +23,7 @@ type BigQueryRepository struct {
 func NewBigQueryRepository(ctx context.Context, projectID string) (*BigQueryRepository, error) {
 	client, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize native bigquery client: %w", err)
+		return nil, fmt.Errorf("failed to initialize native BigQuery client: %w", err)
 	}
 	return &BigQueryRepository{
 		bqClient:  client,
@@ -42,7 +42,7 @@ func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, ta
 	// Fire and forget: starts the load job asynchronously on GCP infrastructure
 	job, err := loader.Run(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to initiate Bigquery load job from %s: %w", gcsURI, err)
+		return "", fmt.Errorf("failed to initiate BigQuery load job from %s: %w", gcsURI, err)
 	}
 
 	return job.ID(), nil
@@ -52,12 +52,12 @@ func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, ta
 func (r *BigQueryRepository) CheckJobStatus(ctx context.Context, jobID string) (*bigquery.JobStatus, error) {
 	job, err := r.bqClient.JobFromID(ctx, jobID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch Bigquery job instance for ID %s: %w", jobID, err)
+		return nil, fmt.Errorf("failed to fetch BigQuery job instance for ID %s: %w", jobID, err)
 	}
 
 	status, err := job.Status(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch Bigquery status metrics for job ID %s: %w", jobID, err)
+		return nil, fmt.Errorf("failed to fetch BigQuery status metrics for job ID %s: %w", jobID, err)
 	}
 
 	return status, nil
@@ -81,7 +81,7 @@ func (r *BigQueryRepository) CreateTable(ctx context.Context, datasetID, tableID
 		Schema: schema,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create Bigquery native table %s.%s: %w", datasetID, tableID, err)
+		return fmt.Errorf("failed to create BigQuery native table %s.%s: %w", datasetID, tableID, err)
 	}
 
 	return nil

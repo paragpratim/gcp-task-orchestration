@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"orchestrator/internal/api"
 	"orchestrator/internal/config"
@@ -37,7 +36,7 @@ func main() {
 	// 1. Initialize complete infrastructure layer in one step
 	infra, err := gcp.NewPlatform(ctx, appCfg.ProjectID, appCfg.BaseURL, appCfg.ServiceAccountEmail)
 	if err != nil {
-		logger.Fatal("Critical platform initialization failure: %v", err)
+		logger.Fatal("Critical platform initialization failure", "ERROR", err)
 	}
 	defer infra.Close() // Automatically clean up everything on exit
 
@@ -50,9 +49,9 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Orchestrator API spinning up on port %s", appCfg.Port)
+		logger.Info("Orchestrator API spinning up on port", "PORT", appCfg.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatal("Server crash: %v", err)
+			logger.Fatal("Server crash", "ERROR", err)
 		}
 	}()
 
@@ -61,11 +60,11 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down engine gracefully...")
+	logger.Info("Shutting down engine gracefully...")
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Fatal("Forced shutdown executed: %v", err)
+		logger.Fatal("Forced shutdown executed", "ERROR", err)
 	}
 }

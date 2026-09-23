@@ -130,7 +130,7 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 		}
 
 		if existingJob != nil {
-			logger.Warn(fmt.Sprintf("Concurrency Guard: Job %s is already registered in the status store. Skipping queue dispatch.", job.ID))
+			logger.Warn("Concurrency Guard: Job is already registered in the status store. Skipping queue dispatch.", "JOB_ID", job.ID)
 			jobStatuses = append(jobStatuses, *existingJob)
 			continue // Skip submitting this job to Cloud Tasks completely
 		}
