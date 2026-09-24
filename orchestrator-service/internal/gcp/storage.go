@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 type ObjectRepository interface {
@@ -19,7 +20,18 @@ type StorageRepository struct {
 	storageClient *storage.Client
 }
 
-func NewStorageRepository(ctx context.Context) (*StorageRepository, error) {
+func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, error) {
+	// Local Client without ADC
+	if env == "local" {
+		client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize native storage client: %w", err)
+		}
+		return &StorageRepository{
+			storageClient: client,
+		}, nil
+	}
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize native storage client: %w", err)

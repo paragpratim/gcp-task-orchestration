@@ -31,7 +31,7 @@ func LoadConfig() *AppConfig {
 		Environment:         env,
 		Port:                getEnv("PORT", "8080"),
 		ProjectID:           getEnv("GCP_PROJECT_ID", "local-project"),
-		BaseURL:             getEnv("QUEUE_BASE_URL", "local-app-url"),
+		BaseURL:             getEnv("QUEUE_BASE_URL", "localhost:8080"),
 		ServiceAccountEmail: getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),
 		JobsCollection:      fmt.Sprintf("%s_intake_jobs", env),
 		JobStatusCollection: fmt.Sprintf("%s_intake_job_status", env),

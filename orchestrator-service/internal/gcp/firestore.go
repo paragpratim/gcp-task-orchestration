@@ -7,7 +7,10 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
@@ -23,7 +26,23 @@ type FirestoreRepository[T any] struct {
 	firestoreClient *firestore.Client
 }
 
-func NewFirestoreRepository[T any](ctx context.Context, projectId string) (*FirestoreRepository[T], error) {
+func NewFirestoreRepository[T any](ctx context.Context, env string, projectId string) (*FirestoreRepository[T], error) {
+	//Local Emulator Setup
+	if env == "local" {
+		// Set the environment variable for the Cloud Tasks emulator
+		client, err := firestore.NewClient(ctx, projectId,
+			option.WithEndpoint("firestore-emulator:8081"),
+			option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+			option.WithoutAuthentication(),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create task client for emulator: %w", err)
+		}
+		return &FirestoreRepository[T]{
+			firestoreClient: client,
+		}, nil
+	}
+
 	client, err := firestore.NewClient(ctx, projectId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to Create firestore client: %w", err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/option"
 )
 
 type DataRepository interface {
@@ -20,7 +21,19 @@ type BigQueryRepository struct {
 	projectID string
 }
 
-func NewBigQueryRepository(ctx context.Context, projectID string) (*BigQueryRepository, error) {
+func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*BigQueryRepository, error) {
+	// Local Client without ADC
+	if env == "local" {
+		client, err := bigquery.NewClient(ctx, projectID, option.WithoutAuthentication())
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize native BigQuery client: %w", err)
+		}
+		return &BigQueryRepository{
+			bqClient:  client,
+			projectID: projectID,
+		}, nil
+	}
+
 	client, err := bigquery.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize native BigQuery client: %w", err)

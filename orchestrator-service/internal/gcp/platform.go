@@ -16,26 +16,26 @@ type Platform struct {
 	BigQuery   *BigQueryRepository
 }
 
-func NewPlatform(ctx context.Context, projectID, baseURL, saEmail string) (*Platform, error) {
-	fsRepo, err := NewFirestoreRepository[any](ctx, projectID)
+func NewPlatform(ctx context.Context, env, projectID, baseURL, saEmail string) (*Platform, error) {
+	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed firestore intake: %w", err)
 	}
 
-	tasksRepo, err := NewCloudTasksRepository(ctx, baseURL, saEmail)
+	tasksRepo, err := NewCloudTasksRepository(ctx, env, baseURL, saEmail)
 	if err != nil {
 		_ = fsRepo.Close()
 		return nil, fmt.Errorf("failed tasks intake: %w", err)
 	}
 
-	gcsRepo, err := NewStorageRepository(ctx)
+	gcsRepo, err := NewStorageRepository(ctx, env)
 	if err != nil {
 		_ = fsRepo.Close()
 		_ = tasksRepo.Close()
 		return nil, fmt.Errorf("failed storage intake: %w", err)
 	}
 
-	bqRepo, err := NewBigQueryRepository(ctx, projectID)
+	bqRepo, err := NewBigQueryRepository(ctx, env, projectID)
 	if err != nil {
 		_ = fsRepo.Close()
 		_ = tasksRepo.Close()

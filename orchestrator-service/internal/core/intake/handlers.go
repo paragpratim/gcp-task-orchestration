@@ -50,7 +50,7 @@ func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gi
 // @Tags         health
 // @Produce      plain
 // @Success      200  {string}  string  "OK"
-// @Router       /health [get]
+// @Router       /intake/health [get]
 func (h *Handler) appHealth(c *gin.Context) {
 	err := h.service.HealthCheck(c)
 	if err != nil {
