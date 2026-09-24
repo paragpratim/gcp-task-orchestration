@@ -14,10 +14,10 @@ tasks:
   up:
     desc: Validate, build, and start the service with Docker Compose
     cmds:
+      - task: swagger
       - task: lint
       - task: test
       - task: build
-      - task: swagger
       - docker compose up -d --build
 
   down:
@@ -80,4 +80,4 @@ tasks:
     desc: Regenerate Swagger documentation
     dir: "{{.SERVICE_DIR}}"
     cmds:
-      - swag init -g main.go -d cmd/api,internal/api,internal/models -o docs
+      - swag init -g cmd/api/main.go --parseDependency --parseInternal -o docs

@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  models.BigQueryFileType:
+  orchestrator_internal_models.BigQueryFileType:
     enum:
     - CSV
     - AVRO
@@ -26,7 +26,7 @@ definitions:
     - FileTypeTFSavedModel
     - FileTypeXGBoostBooster
     - FileTypeIceberg
-  models.IntakeJobDefinition:
+  orchestrator_internal_models.IntakeJobDefinition:
     properties:
       created_at:
         type: string
@@ -40,13 +40,13 @@ definitions:
       name:
         type: string
       source:
-        $ref: '#/definitions/models.SourceDefinition'
+        $ref: '#/definitions/orchestrator_internal_models.SourceDefinition'
       target:
-        $ref: '#/definitions/models.TargetDefinition'
+        $ref: '#/definitions/orchestrator_internal_models.TargetDefinition'
       updated_at:
         type: string
     type: object
-  models.PipelineTaskPayload:
+  orchestrator_internal_models.PipelineTaskPayload:
     properties:
       job_id:
         type: string
@@ -55,18 +55,18 @@ definitions:
     required:
     - job_id
     type: object
-  models.SourceDefinition:
+  orchestrator_internal_models.SourceDefinition:
     properties:
       bucket_name:
         type: string
       file_pattern:
         type: string
       file_type:
-        $ref: '#/definitions/models.BigQueryFileType'
+        $ref: '#/definitions/orchestrator_internal_models.BigQueryFileType'
       prefix:
         type: string
     type: object
-  models.TargetDefinition:
+  orchestrator_internal_models.TargetDefinition:
     properties:
       dataset_id:
         type: string
@@ -90,7 +90,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.PipelineTaskPayload'
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
       produces:
       - application/json
       responses:
@@ -118,7 +118,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.PipelineTaskPayload'
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
       produces:
       - application/json
       responses:
@@ -144,7 +144,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.PipelineTaskPayload'
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
       produces:
       - application/json
       responses:
@@ -173,7 +173,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.PipelineTaskPayload'
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
       produces:
       - application/json
       responses:
@@ -204,7 +204,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.PipelineTaskPayload'
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
       produces:
       - application/json
       responses:
@@ -247,7 +247,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.IntakeJobDefinition'
+          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
       produces:
       - application/json
       responses:
@@ -277,7 +277,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.IntakeJobDefinition'
+          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
       produces:
       - application/json
       responses:
@@ -334,7 +334,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.IntakeJobDefinition'
+          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
       produces:
       - application/json
       responses:

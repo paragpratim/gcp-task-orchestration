@@ -32,7 +32,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                            "$ref": "#/definitions/orchestrator_internal_models.PipelineTaskPayload"
                         }
                     }
                 ],
@@ -74,7 +74,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                            "$ref": "#/definitions/orchestrator_internal_models.PipelineTaskPayload"
                         }
                     }
                 ],
@@ -113,7 +113,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                            "$ref": "#/definitions/orchestrator_internal_models.PipelineTaskPayload"
                         }
                     }
                 ],
@@ -155,7 +155,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                            "$ref": "#/definitions/orchestrator_internal_models.PipelineTaskPayload"
                         }
                     }
                 ],
@@ -201,7 +201,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                            "$ref": "#/definitions/orchestrator_internal_models.PipelineTaskPayload"
                         }
                     }
                 ],
@@ -267,7 +267,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
                         }
                     }
                 ],
@@ -311,7 +311,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
                         }
                     }
                 ],
@@ -398,7 +398,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
                         }
                     }
                 ],
@@ -426,7 +426,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.BigQueryFileType": {
+        "orchestrator_internal_models.BigQueryFileType": {
             "type": "string",
             "enum": [
                 "CSV",
@@ -455,7 +455,7 @@ const docTemplate = `{
                 "FileTypeIceberg"
             ]
         },
-        "models.IntakeJobDefinition": {
+        "orchestrator_internal_models.IntakeJobDefinition": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -475,17 +475,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "source": {
-                    "$ref": "#/definitions/models.SourceDefinition"
+                    "$ref": "#/definitions/orchestrator_internal_models.SourceDefinition"
                 },
                 "target": {
-                    "$ref": "#/definitions/models.TargetDefinition"
+                    "$ref": "#/definitions/orchestrator_internal_models.TargetDefinition"
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "models.PipelineTaskPayload": {
+        "orchestrator_internal_models.PipelineTaskPayload": {
             "type": "object",
             "required": [
                 "job_id"
@@ -499,7 +499,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SourceDefinition": {
+        "orchestrator_internal_models.SourceDefinition": {
             "type": "object",
             "properties": {
                 "bucket_name": {
@@ -509,14 +509,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "file_type": {
-                    "$ref": "#/definitions/models.BigQueryFileType"
+                    "$ref": "#/definitions/orchestrator_internal_models.BigQueryFileType"
                 },
                 "prefix": {
                     "type": "string"
                 }
             }
         },
-        "models.TargetDefinition": {
+        "orchestrator_internal_models.TargetDefinition": {
             "type": "object",
             "properties": {
                 "dataset_id": {
