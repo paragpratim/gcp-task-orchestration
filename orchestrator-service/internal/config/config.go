@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// AppConfig holds the configuration for the application.
 type AppConfig struct {
 	// Application configuration
 	AppName     string `json:"app_name"`
@@ -23,6 +24,7 @@ type AppConfig struct {
 	BqQueueName     string `json:"bq_queue_name"`
 }
 
+// LoadConfig loads the application configuration from environment variables.
 func LoadConfig() *AppConfig {
 	env := getEnv("APP_ENV", "local")
 
@@ -41,6 +43,8 @@ func LoadConfig() *AppConfig {
 	}
 }
 
+// getEnv retrieves the value of the environment variable named by the key.
+// If the variable is not present, it returns the fallback value.
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value

@@ -1,9 +1,10 @@
 package routes
 
+// APIPrefix is the prefix for all API endpoints.
 const APIPrefix = "/api/v1"
 
 const (
-	// Intake endpoints
+	// --- Intake endpoints ---
 
 	IntakeHealth    = "/intake/health"
 	IntakeJobCreate = "/intake/job"
@@ -11,18 +12,19 @@ const (
 	IntakeJobDelete = "/intake/job/:id"
 	IntakeJobsQueue = "/intake/jobs/queue"
 
-	// GCS endpoints
+	// --- GCS endpoints ---
 
 	GCSListFiles = "/gcs/files/list"
 	GCSMoveFiles = "/gcs/files/move"
 
-	// BigQuery endpoints
+	// --- BigQuery endpoints ---
 
 	BigQueryLoadJobCreate = "/bigquery/job/create"
 	BigQueryLoadJobCheck  = "/bigquery/job/check"
 	BigQueryRegionCheck   = "/bigquery/region/check"
 )
 
+// Full returns the full API path by prepending the APIPrefix to the given path.
 func Full(path string) string {
 	return APIPrefix + path
 }

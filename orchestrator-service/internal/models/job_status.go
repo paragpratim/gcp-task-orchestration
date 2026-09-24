@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// ExecutionStatus represents the status of a job execution.
 type ExecutionStatus string
 
 const (
@@ -31,6 +32,7 @@ func (e ExecutionStatus) String() string {
 	return string(e)
 }
 
+// JobStatus represents the status of a job execution.
 type JobStatus struct {
 	JobID     string          `json:"job_id" firestore:"job_id"`
 	Status    ExecutionStatus `json:"status" firestore:"status"` // Holds the ExecutionStatus string
@@ -39,6 +41,7 @@ type JobStatus struct {
 	Metadata  map[string]any  `json:"metadata,omitempty" firestore:"metadata,omitempty"`
 }
 
+// PipelineTaskPayload represents the payload for a pipeline task.
 type PipelineTaskPayload struct {
 	JobID  string `json:"job_id" binding:"required"`
 	TaskID string `json:"task_id,omitempty"`

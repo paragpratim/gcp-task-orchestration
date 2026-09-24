@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// BigQueryFileType represents the supported file types for BigQuery ingestion.
 type BigQueryFileType string
 
 const (
@@ -21,6 +22,7 @@ const (
 	FileTypeIceberg         BigQueryFileType = "ICEBERG"
 )
 
+// IsValid checks if the BigQueryFileType is one of the supported types.
 func (t BigQueryFileType) IsValid() bool {
 	switch t {
 	case FileTypeCSV, FileTypeAvro, FileTypeJSON, FileTypeDatastoreBackup,
@@ -36,6 +38,7 @@ func (t BigQueryFileType) String() string {
 	return string(t)
 }
 
+// Validate checks if the SourceDefinition has valid fields.
 func (s SourceDefinition) Validate() error {
 	if s.FileType == "" {
 		return fmt.Errorf("source.file_type is required")
@@ -46,6 +49,7 @@ func (s SourceDefinition) Validate() error {
 	return nil
 }
 
+// SourceDefinition represents the source configuration for a BigQuery ingestion job.
 type SourceDefinition struct {
 	BucketName  string           `json:"bucket_name" firestore:"bucket_name"`
 	Prefix      string           `json:"prefix,omitempty" firestore:"prefix,omitempty"`
@@ -53,6 +57,7 @@ type SourceDefinition struct {
 	FileType    BigQueryFileType `json:"file_type,omitempty" firestore:"file_type,omitempty"`
 }
 
+// TargetDefinition represents the target configuration for a BigQuery ingestion job.
 type TargetDefinition struct {
 	ProjectID string `json:"project_id" firestore:"project_id"`
 	DatasetID string `json:"dataset_id" firestore:"dataset_id"`

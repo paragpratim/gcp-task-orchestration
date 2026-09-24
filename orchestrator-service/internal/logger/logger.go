@@ -19,6 +19,7 @@ func Init() {
 	slog.SetDefault(slog.New(handler))
 }
 
+// getLogLevel retrieves the log level from the LOG_LEVEL environment variable.
 func getLogLevel() slog.Level {
 	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {
 	case "debug":
@@ -32,6 +33,7 @@ func getLogLevel() slog.Level {
 	}
 }
 
+// logWithCaller logs a message with the caller information.
 func logWithCaller(level slog.Level, msg string, args ...any) {
 	logger := slog.Default()
 	if !logger.Enabled(context.Background(), level) {
@@ -67,6 +69,7 @@ func Debug(msg string, args ...any) {
 	logWithCaller(slog.LevelDebug, msg, args...)
 }
 
+// Fatal logs a message at ERROR level and exits the application.
 func Fatal(msg string, args ...any) {
 	logWithCaller(slog.LevelError, msg, args...)
 	os.Exit(1)

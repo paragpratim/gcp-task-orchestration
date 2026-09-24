@@ -14,6 +14,12 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// SetupRouter initializes the core Gin routing engine with recovery middleware,
+// global telemetry hooks, and explicit visual Swagger UI documentation.
+//
+// It compiles and cross-injects infrastructure tiers down into individual
+// feature controllers (Intake, GCS, BigQuery, Dataflow) using pure, compile-safe
+// constructor dependency injection.
 func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())

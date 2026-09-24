@@ -33,14 +33,14 @@ func main() {
 		logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_BASE_URL, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
 	}
 
-	// 1. Initialize complete infrastructure layer in one step
+	// Initialize complete GCP infrastructure layer
 	infra, err := gcp.NewPlatform(ctx, appCfg.Environment, appCfg.ProjectID, appCfg.BaseURL, appCfg.ServiceAccountEmail)
 	if err != nil {
 		logger.Fatal("Critical platform initialization failure", "ERROR", err)
 	}
 	defer infra.Close() // Automatically clean up everything on exit
 
-	// 2. Set up and spin up HTTP network server
+	// Set up and spin up HTTP network server
 	srv := &http.Server{
 		Addr:         ":" + appCfg.Port,
 		Handler:      api.SetupRouter(infra, appCfg),
@@ -55,7 +55,7 @@ func main() {
 		}
 	}()
 
-	// 3. Clean, blocking OS signal termination handler
+	// Clean, blocking OS signal termination handler
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
