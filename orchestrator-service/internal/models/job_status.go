@@ -6,16 +6,25 @@ type ExecutionStatus string
 
 const (
 	StatusQueued             ExecutionStatus = "QUEUED"
+	StatusSkipped            ExecutionStatus = "COMPLETED_SKIPPED"
+	StatusSuccess            ExecutionStatus = "SUCCESS"
 	StatusProcessingGCS      ExecutionStatus = "PROCESSING_GCS"
 	StatusMovingGCS          ExecutionStatus = "MOVING_GCS"
 	StatusCompletedGCS       ExecutionStatus = "COMPLETED_GCS"
+	StatusFailedGCS          ExecutionStatus = "FAILED_GCS"
 	StatusProcessingBigQuery ExecutionStatus = "PROCESSING_BIGQUERY"
 	StatusCompletedBigQuery  ExecutionStatus = "COMPLETED_BIGQUERY"
-	StatusProcessingDataflow ExecutionStatus = "PROCESSING_DATAFLOW"
-	StatusSuccess            ExecutionStatus = "SUCCESS"
-	StatusFailedGCS          ExecutionStatus = "FAILED_GCS"
 	StatusFailedBQ           ExecutionStatus = "FAILED_BIGQUERY"
-	StatusSkipped            ExecutionStatus = "COMPLETED_SKIPPED"
+	StatusProcessingDataflow ExecutionStatus = "PROCESSING_DATAFLOW"
+	StatusCompletedDataflow  ExecutionStatus = "COMPLETED_DATAFLOW"
+	StatusFailedDataflow     ExecutionStatus = "FAILED_DATAFLOW"
+)
+
+const (
+	MetadataKeyJobID         = "job_id"
+	MetadataKeyTaskID        = "task_id"
+	MetadataKeyDiscovered    = "discovered_files"
+	MetadataKeyBigQueryJobID = "bq_job_id"
 )
 
 func (e ExecutionStatus) String() string {

@@ -8,7 +8,7 @@ import (
 )
 
 type DataRepository interface {
-	CreateGCSLoadJob(ctx context.Context, datasetID, tableID, gcsURI string, format bigquery.DataFormat) (string, error)
+	CreateGCSLoadJob(ctx context.Context, datasetID, tableID string, gcsURIs []string, format bigquery.DataFormat) (string, error)
 	CheckJobStatus(ctx context.Context, jobID string) (*bigquery.JobStatus, error)
 	DatasetRegionAvailable(ctx context.Context, datasetID string) (string, error)
 	CreateTable(ctx context.Context, datasetID, tableID string, schema bigquery.Schema) error
@@ -31,8 +31,8 @@ func NewBigQueryRepository(ctx context.Context, projectID string) (*BigQueryRepo
 	}, nil
 }
 
-func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, tableID, gcsURI string, format bigquery.DataFormat) (string, error) {
-	gcsRef := bigquery.NewGCSReference(gcsURI)
+func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, tableID string, gcsURIs []string, format bigquery.DataFormat) (string, error) {
+	gcsRef := bigquery.NewGCSReference(gcsURIs...)
 	gcsRef.SourceFormat = format
 	gcsRef.AutoDetect = true // Dynamically extracts schemas if not explicitly provided in the file
 
@@ -42,7 +42,7 @@ func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, ta
 	// Fire and forget: starts the load job asynchronously on GCP infrastructure
 	job, err := loader.Run(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to initiate BigQuery load job from %s: %w", gcsURI, err)
+		return "", fmt.Errorf("failed to initiate BigQuery load job from %v: %w", gcsURIs, err)
 	}
 
 	return job.ID(), nil

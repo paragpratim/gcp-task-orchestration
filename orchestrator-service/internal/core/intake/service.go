@@ -42,6 +42,10 @@ func (s *Service) HealthCheck(ctx *gin.Context) error {
 }
 
 func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
+	if err := jobDefinition.Source.Validate(); err != nil {
+		return nil, err
+	}
+
 	if jobDefinition.ID == "" {
 		jobDefinition.ID = uuid.New().String()
 	}
@@ -57,6 +61,9 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 }
 
 func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
+	if err := jobDefinition.Source.Validate(); err != nil {
+		return nil, err
+	}
 
 	if jobDefinition.ID == "" {
 		return nil, fmt.Errorf("cannot update a job without a valid transaction identifier 'id'")
@@ -135,11 +142,13 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			continue // Skip submitting this job to Cloud Tasks completely
 		}
 
+		taskID := fmt.Sprintf("%d", time.Now().UTC().UnixMilli())
+
 		jobStatus := models.JobStatus{
 			JobID:     job.ID,
 			Status:    models.StatusQueued,
 			UpdatedAt: time.Now().UTC(),
-			Metadata:  map[string]any{},
+			Metadata:  map[string]any{models.MetadataKeyTaskID: taskID},
 		}
 
 		err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
@@ -148,7 +157,8 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 		}
 
 		taskPayload := models.PipelineTaskPayload{
-			JobID: job.ID,
+			JobID:  job.ID,
+			TaskID: taskID,
 		}
 		payloadBytes, err := json.Marshal(taskPayload)
 		if err != nil {

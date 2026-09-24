@@ -54,7 +54,8 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	jobID := task.JobID
 	taskID := task.TaskID
 
-	nextRunPayload := models.PipelineTaskPayload{JobID: jobID}
+	nextTaskID := fmt.Sprintf("%d", time.Now().UTC().UnixMilli())
+	nextRunPayload := models.PipelineTaskPayload{JobID: jobID, TaskID: nextTaskID}
 	nextRunBytes, err := json.Marshal(nextRunPayload)
 	if err != nil {
 		return fmt.Errorf("failed marshalling next-run payload for job %s: %w", jobID, err)
@@ -80,18 +81,10 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		return nil
 	}
 
-	if taskID == "" {
-		taskID = fmt.Sprintf("%d", time.Now().UTC().UnixMilli())
-	}
-
 	// 2. Advance execution trace status to PROCESSING_GCS
 	statusTracker.Status = models.StatusProcessingGCS
 	statusTracker.Message = "Scanning storage bucket boundaries against pattern criteria."
 	statusTracker.UpdatedAt = time.Now().UTC()
-	if statusTracker.Metadata == nil {
-		statusTracker.Metadata = make(map[string]any)
-	}
-	statusTracker.Metadata["task_id"] = taskID
 	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		logger.Error("Failed updating execution trace boundary ", "JOB_ID", jobID, "TASK_ID", taskID, "ERROR", err)
 		return nil
@@ -143,11 +136,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	}
 
 	// 7. Inject discovered file names array into transient metadata map contract space
-	if statusTracker.Metadata == nil {
-		statusTracker.Metadata = make(map[string]any)
-	}
-	statusTracker.Metadata["discovered_files"] = matchedObjects
-	statusTracker.Metadata["task_id"] = taskID
+	statusTracker.Metadata[models.MetadataKeyDiscovered] = matchedObjects
 	statusTracker.Message = fmt.Sprintf("Discovered %d target assets matching pattern schemas.", len(matchedObjects))
 	statusTracker.UpdatedAt = time.Now().UTC()
 
@@ -237,7 +226,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 	}
 
 	// 5. Overwrite Metadata map variables to point exclusively to the clean relocated GCS URI paths
-	statusTracker.Metadata["discovered_files"] = relocatedURIs // Update string paths to points directly to safe processing boundaries
+	statusTracker.Metadata[models.MetadataKeyDiscovered] = relocatedURIs // Update string paths to points directly to safe processing boundaries
 	statusTracker.Status = models.StatusCompletedGCS
 	statusTracker.Message = fmt.Sprintf("Successfully relocated %d items to processing storage zone.", len(relocatedURIs))
 	statusTracker.UpdatedAt = time.Now().UTC()
@@ -302,22 +291,12 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 		return nil
 	}
 
-	taskPayload := models.PipelineTaskPayload{JobID: jobID, TaskID: ""}
-	payloadBytes, err := json.Marshal(taskPayload)
-	if err != nil {
-		return fmt.Errorf("failed marshalling requeue tracking payload for job %s: %w", jobID, err)
-	}
-
-	if err := s.tasksRepo.Put(ctx, s.cfg.IntakeQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), payloadBytes, nextRunInterval); err != nil {
-		return fmt.Errorf("failed enqueuing requeue tracking task for job %s: %w", jobID, err)
-	}
-
 	logger.Info("Finalized run for Job and status reset to QUEUED.", "JOB_ID", jobID, "TASK_ID", taskID, "RELOCATED_COUNT", len(relocatedURIs), "STAGE", stage)
 	return nil
 }
 
 func (s *Service) loadDiscoveredFilesContext(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus) ([]string, *models.IntakeJobDefinition, error) {
-	rawFiles, exists := statusTracker.Metadata["discovered_files"]
+	rawFiles, exists := statusTracker.Metadata[models.MetadataKeyDiscovered]
 	if !exists || rawFiles == nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Metadata list 'discovered_files' is missing.", nil)
 		return nil, nil, fmt.Errorf("missing discovered files metadata for job %s", jobID)
