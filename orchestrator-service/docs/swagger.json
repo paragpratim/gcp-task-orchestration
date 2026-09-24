@@ -7,5 +7,521 @@
         "version": "1.0"
     },
     "basePath": "/api/v1",
-    "paths": {}
+    "paths": {
+        "/bigquery/job/check": {
+            "post": {
+                "description": "Retrieves the details of a specific BigQuery job by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bigquery"
+                ],
+                "summary": "Get BigQuery job",
+                "parameters": [
+                    {
+                        "description": "Lean Pipeline Transport Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/bigquery/job/create": {
+            "post": {
+                "description": "Creates a new BigQuery job with the provided details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bigquery"
+                ],
+                "summary": "Create BigQuery job",
+                "parameters": [
+                    {
+                        "description": "Lean Pipeline Transport Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/bigquery/region/check": {
+            "post": {
+                "description": "Checks the availability of a specific BigQuery region.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bigquery"
+                ],
+                "summary": "Check BigQuery region",
+                "parameters": [
+                    {
+                        "description": "Lean Pipeline Transport Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/gcs/files/list": {
+            "post": {
+                "description": "Accepts a minimal task payload, verifies configuration status, aggregates matching files via globs, and triggers the move stage.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gcs"
+                ],
+                "summary": "List and Track GCS Files",
+                "parameters": [
+                    {
+                        "description": "Lean Pipeline Transport Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/gcs/files/move": {
+            "post": {
+                "description": "Relocates discovered files to a processed folder boundary, updates metadata structures, and schedules the BigQuery loading phase.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gcs"
+                ],
+                "summary": "Move Files and Queue Ingestion",
+                "parameters": [
+                    {
+                        "description": "Lean Pipeline Transport Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PipelineTaskPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/intake/health": {
+            "get": {
+                "description": "Responds with an OK status if the api is running.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/intake/job": {
+            "put": {
+                "description": "Accepts an update request for an existing intake job and processes it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Update Intake Job",
+                "parameters": [
+                    {
+                        "description": "Intake Job Update Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Updated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Accepts a new intake job request and processes it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Create Intake Job",
+                "parameters": [
+                    {
+                        "description": "Intake Job Request Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Job Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/intake/job/{id}": {
+            "delete": {
+                "description": "Deletes an existing intake job by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Delete Intake Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Intake Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Deleted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/intake/jobs/queue": {
+            "post": {
+                "description": "Queues all the active intake jobs for processing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Queue Active Intake Jobs",
+                "parameters": [
+                    {
+                        "description": "Queue Jobs Request Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.IntakeJobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Jobs Queued",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.BigQueryFileType": {
+            "type": "string",
+            "enum": [
+                "CSV",
+                "AVRO",
+                "NEWLINE_DELIMITED_JSON",
+                "DATASTORE_BACKUP",
+                "GOOGLE_SHEETS",
+                "BIGTABLE",
+                "PARQUET",
+                "ORC",
+                "ML_TF_SAVED_MODEL",
+                "ML_XGBOOST_BOOSTER",
+                "ICEBERG"
+            ],
+            "x-enum-varnames": [
+                "FileTypeCSV",
+                "FileTypeAvro",
+                "FileTypeJSON",
+                "FileTypeDatastoreBackup",
+                "FileTypeGoogleSheets",
+                "FileTypeBigtable",
+                "FileTypeParquet",
+                "FileTypeORC",
+                "FileTypeTFSavedModel",
+                "FileTypeXGBoostBooster",
+                "FileTypeIceberg"
+            ]
+        },
+        "models.IntakeJobDefinition": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string"
+                },
+                "source": {
+                    "$ref": "#/definitions/models.SourceDefinition"
+                },
+                "target": {
+                    "$ref": "#/definitions/models.TargetDefinition"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PipelineTaskPayload": {
+            "type": "object",
+            "required": [
+                "job_id"
+            ],
+            "properties": {
+                "job_id": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SourceDefinition": {
+            "type": "object",
+            "properties": {
+                "bucket_name": {
+                    "type": "string"
+                },
+                "file_pattern": {
+                    "type": "string"
+                },
+                "file_type": {
+                    "$ref": "#/definitions/models.BigQueryFileType"
+                },
+                "prefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TargetDefinition": {
+            "type": "object",
+            "properties": {
+                "dataset_id": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "table_name": {
+                    "type": "string"
+                }
+            }
+        }
+    }
 }
