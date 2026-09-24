@@ -7,6 +7,7 @@ import (
 	"orchestrator/internal/models"
 )
 
+// Platform is a struct that holds references to various GCP repositories used in the orchestrator.
 type Platform struct {
 	Firestore  *FirestoreRepository[any]
 	IntakeJobs *FirestoreRepository[models.IntakeJobDefinition]
@@ -16,18 +17,22 @@ type Platform struct {
 	BigQuery   *BigQueryRepository
 }
 
+// NewPlatform initializes and returns a new Platform instance with the provided configuration.
 func NewPlatform(ctx context.Context, env, projectID, baseURL, saEmail string) (*Platform, error) {
+	// Initialize Firestore repository
 	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed firestore intake: %w", err)
 	}
 
+	// Initialize Cloud Tasks repository
 	tasksRepo, err := NewCloudTasksRepository(ctx, env, baseURL, saEmail)
 	if err != nil {
 		_ = fsRepo.Close()
 		return nil, fmt.Errorf("failed tasks intake: %w", err)
 	}
 
+	// Initialize Storage repository
 	gcsRepo, err := NewStorageRepository(ctx, env)
 	if err != nil {
 		_ = fsRepo.Close()
@@ -35,6 +40,7 @@ func NewPlatform(ctx context.Context, env, projectID, baseURL, saEmail string) (
 		return nil, fmt.Errorf("failed storage intake: %w", err)
 	}
 
+	// Initialize BigQuery repository
 	bqRepo, err := NewBigQueryRepository(ctx, env, projectID)
 	if err != nil {
 		_ = fsRepo.Close()
@@ -53,6 +59,7 @@ func NewPlatform(ctx context.Context, env, projectID, baseURL, saEmail string) (
 	}, nil
 }
 
+// Close releases any resources held by the Platform, such as Firestore, Cloud Tasks, Storage, and BigQuery clients.
 func (p *Platform) Close() {
 	if p.Firestore != nil {
 		_ = p.Firestore.Close()

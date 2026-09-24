@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// DocumentRepository is a generic interface for interacting with a Firestore database.
 type DocumentRepository[T any] interface {
 	Put(ctx context.Context, collection, id string, data T) error
 	Get(ctx context.Context, collection, id string) (*T, error)
@@ -22,10 +23,12 @@ type DocumentRepository[T any] interface {
 	Close() error
 }
 
+// FirestoreRepository is a generic implementation of the DocumentRepository interface for Firestore.
 type FirestoreRepository[T any] struct {
 	firestoreClient *firestore.Client
 }
 
+// NewFirestoreRepository creates a new instance of FirestoreRepository.
 func NewFirestoreRepository[T any](ctx context.Context, env string, projectId string) (*FirestoreRepository[T], error) {
 	//Local Emulator Setup
 	if env == "local" {
@@ -36,7 +39,7 @@ func NewFirestoreRepository[T any](ctx context.Context, env string, projectId st
 			option.WithoutAuthentication(),
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create task client for emulator: %w", err)
+			return nil, fmt.Errorf("failed to create firestore client for emulator: %w", err)
 		}
 		return &FirestoreRepository[T]{
 			firestoreClient: client,
@@ -45,16 +48,20 @@ func NewFirestoreRepository[T any](ctx context.Context, env string, projectId st
 
 	client, err := firestore.NewClient(ctx, projectId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to Create firestore client: %w", err)
+		return nil, fmt.Errorf("failed to create firestore client: %w", err)
 	}
 	return &FirestoreRepository[T]{firestoreClient: client}, nil
 }
 
+// NewTypedFirestoreRepository creates a new instance of FirestoreRepository with an existing Firestore client.
+// This is useful when you already have a Firestore client and want to create a repository for a specific type.
 func NewTypedFirestoreRepository[T any](client *firestore.Client) *FirestoreRepository[T] {
 	return &FirestoreRepository[T]{firestoreClient: client}
 }
 
+// Put adds or updates a document in the specified collection with the given ID and data.
 func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) error {
+	// If id is empty, generate a new document reference with a random ID
 	var docRef *firestore.DocumentRef
 	if id == "" {
 		docRef = c.firestoreClient.Collection(collection).NewDoc()
@@ -69,6 +76,7 @@ func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string,
 	return nil
 }
 
+// Get retrieves a document from the specified collection with the given ID and unmarshals it into the specified type.
 func (c *FirestoreRepository[T]) Get(ctx context.Context, collection, id string) (*T, error) {
 	doc, err := c.firestoreClient.Collection(collection).Doc(id).Get(ctx)
 	if err != nil {
@@ -84,6 +92,7 @@ func (c *FirestoreRepository[T]) Get(ctx context.Context, collection, id string)
 	return &data, nil
 }
 
+// GetAll retrieves all documents from the specified collection and unmarshals them into the specified type.
 func (c *FirestoreRepository[T]) GetAll(ctx context.Context, collection string) (*[]T, error) {
 	iter := c.firestoreClient.Collection(collection).Documents(ctx)
 	defer iter.Stop()
@@ -106,14 +115,16 @@ func (c *FirestoreRepository[T]) GetAll(ctx context.Context, collection string) 
 	return &results, nil
 }
 
+// Delete removes a document from the specified collection with the given ID.
 func (c *FirestoreRepository[T]) Delete(ctx context.Context, collection, id string) error {
 	_, err := c.firestoreClient.Collection(collection).Doc(id).Delete(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to Delete Document from Firestore: %w", err)
+		return fmt.Errorf("failed to delete Document from Firestore: %w", err)
 	}
 	return nil
 }
 
+// Close explicitly releases connections in the Firestore client transport layers.
 func (c *FirestoreRepository[T]) Close() error {
 	return c.firestoreClient.Close()
 }

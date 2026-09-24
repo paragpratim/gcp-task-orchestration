@@ -8,6 +8,7 @@ import (
 	"google.golang.org/api/option"
 )
 
+// DataRepository defines the interface for interacting with Google BigQuery.
 type DataRepository interface {
 	CreateGCSLoadJob(ctx context.Context, datasetID, tableID string, gcsURIs []string, format bigquery.DataFormat) (string, error)
 	CheckJobStatus(ctx context.Context, jobID string) (*bigquery.JobStatus, error)
@@ -16,11 +17,13 @@ type DataRepository interface {
 	Close() error
 }
 
+// BigQueryRepository is a concrete implementation of the DataRepository interface for Google BigQuery.
 type BigQueryRepository struct {
 	bqClient  *bigquery.Client
 	projectID string
 }
 
+// NewBigQueryRepository creates a new instance of BigQueryRepository.
 func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*BigQueryRepository, error) {
 	// Local Client without ADC
 	if env == "local" {
@@ -44,6 +47,7 @@ func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*
 	}, nil
 }
 
+// CreateGCSLoadJob creates a BigQuery load job to load data from GCS into a specified table.
 func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, tableID string, gcsURIs []string, format bigquery.DataFormat) (string, error) {
 	gcsRef := bigquery.NewGCSReference(gcsURIs...)
 	gcsRef.SourceFormat = format

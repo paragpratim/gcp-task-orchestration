@@ -10,16 +10,19 @@ import (
 	"google.golang.org/api/option"
 )
 
+// ObjectRepository defines the interface for interacting with object storage.
 type ObjectRepository interface {
 	ListObjects(ctx context.Context, bucketName, prefix string) ([]string, error)
 	MoveFile(ctx context.Context, bucketName, srcObject, dstObject string) error
 	Close() error
 }
 
+// StorageRepository is a concrete implementation of ObjectRepository for Google Cloud Storage.
 type StorageRepository struct {
 	storageClient *storage.Client
 }
 
+// NewStorageRepository creates a new instance of StorageRepository.
 func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, error) {
 	// Local Client without ADC
 	if env == "local" {
@@ -41,6 +44,7 @@ func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, 
 	}, nil
 }
 
+// ListObjects retrieves a list of object names from the specified bucket that match the given prefix.
 func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string) ([]string, error) {
 	var objects []string
 
@@ -62,6 +66,7 @@ func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix 
 	return objects, nil
 }
 
+// MoveFile moves an object from the source path to the destination path within the same bucket.
 func (r *StorageRepository) MoveFile(ctx context.Context, bucketName, srcObject, dstObject string) error {
 	bucketRef := r.storageClient.Bucket(bucketName)
 	srcRef := bucketRef.Object(srcObject)
@@ -79,6 +84,7 @@ func (r *StorageRepository) MoveFile(ctx context.Context, bucketName, srcObject,
 	return nil
 }
 
+// Close releases any resources held by the StorageRepository.
 func (r *StorageRepository) Close() error {
 	return r.storageClient.Close()
 }

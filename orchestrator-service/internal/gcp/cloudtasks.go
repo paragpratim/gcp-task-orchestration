@@ -13,16 +13,20 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// TaskRepository defines the interface for interacting with a task queue.
 type TaskRepository interface {
 	Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error
 	Close() error
 }
+
+// CloudTasksRepository is a concrete implementation of the TaskRepository interface for Google Cloud Tasks.
 type CloudTasksRepository struct {
 	tasksClient         *cloudtasks.Client
 	baseURL             string
 	serviceAccountEmail string
 }
 
+// NewCloudTasksRepository creates a new instance of CloudTasksRepository.
 func NewCloudTasksRepository(ctx context.Context, env string, baseURL string, serviceAccountEmail string) (*CloudTasksRepository, error) {
 	//Local Emulator Setup
 	if env == "local" {
@@ -54,6 +58,7 @@ func NewCloudTasksRepository(ctx context.Context, env string, baseURL string, se
 	}, nil
 }
 
+// Put enqueues a task into the specified Cloud Tasks queue with an optional delay.
 func (c *CloudTasksRepository) Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
 	fullURL := fmt.Sprintf("%s%s", c.baseURL, path)
 
@@ -92,6 +97,7 @@ func (c *CloudTasksRepository) Put(ctx context.Context, queuePath string, method
 	return nil
 }
 
+// Close explicitly releases connections in the Cloud Tasks client transport layers.
 func (c *CloudTasksRepository) Close() error {
 	return c.tasksClient.Close()
 }
