@@ -15,6 +15,7 @@ import (
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 )
 
+// Config holds configuration parameters for the GCS service.
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
@@ -23,6 +24,7 @@ type Config struct {
 	IntakeQueueName  string
 }
 
+// Service provides methods to manage GCS file operations and task scheduling.
 type Service struct {
 	jobsRepo    gcp.DocumentRepository[models.IntakeJobDefinition]
 	statusRepo  gcp.DocumentRepository[models.JobStatus]
@@ -31,6 +33,7 @@ type Service struct {
 	cfg         Config
 }
 
+// NewService creates a new instance of the GCS Service with the provided repositories and configuration.
 func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, storage gcp.ObjectRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:    jobs,
@@ -41,15 +44,20 @@ func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status 
 	}
 }
 
+// Constants representing different subdirectories of file processing in GCS.
 const (
 	stageProcessing = "processing"
 	stageProcessed  = "processed"
 	stageFailed     = "failed"
 )
 
+// nextRunInterval defines the interval for scheduling the next Job run.
 const nextRunInterval = 15 * time.Minute
+
+// nextTaskInterval defines the interval for scheduling the next task run.
 const nextTaskInterval = 10 * time.Second
 
+// ListFiles scans the GCS bucket for files matching the job's pattern and schedules the next run.
 func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload) error {
 	jobID := task.JobID
 	taskID := task.TaskID
@@ -125,7 +133,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		}
 	}
 
-	// 6. Branch based on discovery matching volume metrics
+	// Branch based on discovery matching volume metrics
 	if len(matchedObjects) == 0 {
 		logger.Warn("Zero objects matched expression pattern. Terminating workflow step safely.", "JOB_ID", jobID, "TASK_ID", taskID, "PATTERN", pattern)
 		statusTracker.Status = models.StatusSkipped
@@ -135,7 +143,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		return nil // Short-circuit execution loop cleanly; downstream pipeline calls are skipped
 	}
 
-	// 7. Inject discovered file names array into transient metadata map contract space
+	// Inject discovered file names array into transient metadata map contract space
 	statusTracker.Metadata[models.MetadataKeyDiscovered] = matchedObjects
 	statusTracker.Message = fmt.Sprintf("Discovered %d target assets matching pattern schemas.", len(matchedObjects))
 	statusTracker.UpdatedAt = time.Now().UTC()
@@ -145,7 +153,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		return nil
 	}
 
-	// 8. Auto-route execution downstream to Step 2: Move Files
+	// Auto-route execution downstream to Step 2: Move Files
 	taskPayload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
 	payloadBytes, err := json.Marshal(taskPayload)
 	if err != nil {
@@ -163,6 +171,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	return nil
 }
 
+// MoveFiles relocates files from the discovery phase to the processing phase in GCS, and handles finalization for completed or failed runs.
 func (s *Service) MoveFiles(ctx context.Context, task models.PipelineTaskPayload) error {
 	jobID := task.JobID
 	taskID := task.TaskID
@@ -189,6 +198,7 @@ func (s *Service) MoveFiles(ctx context.Context, task models.PipelineTaskPayload
 	}
 }
 
+// moveToProcessing handles the relocation of discovered files to the processing phase in GCS.
 func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus) error {
 	// 1b. Advance execution trace status to MOVING_GCS while relocation is in flight
 	statusTracker.Status = models.StatusMovingGCS
@@ -254,6 +264,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 	return nil
 }
 
+// finalizeRun handles the finalization of a run by relocating files to the specified stage and updating the job status.
 func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus, stage string) error {
 	discoveredObjects, jobConfig, err := s.loadDiscoveredFilesContext(ctx, jobID, taskID, statusTracker)
 	if err != nil {
@@ -295,6 +306,7 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 	return nil
 }
 
+// loadDiscoveredFilesContext retrieves the list of discovered files and the job configuration for the given job ID.
 func (s *Service) loadDiscoveredFilesContext(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus) ([]string, *models.IntakeJobDefinition, error) {
 	rawFiles, exists := statusTracker.Metadata[models.MetadataKeyDiscovered]
 	if !exists || rawFiles == nil {
@@ -312,6 +324,7 @@ func (s *Service) loadDiscoveredFilesContext(ctx context.Context, jobID, taskID 
 	return discoveredObjects, jobConfig, nil
 }
 
+// failWorkflowStep logs an error, updates the job status to failed, and persists the updated status to the repository.
 func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tracker *models.JobStatus, message string, err error) {
 	logger.Error("GCS Service Execution Failure. It will be retried...", "JOB_ID", jobID, "TASK_ID", taskID, "MESSAGE", message, "ERROR", err)
 	tracker.Status = models.StatusFailedGCS
@@ -320,6 +333,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	_ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker)
 }
 
+// buildObjectKey constructs a GCS object key by combining the prefix, stage, task ID, and filename.
 func buildObjectKey(prefix, stage, taskID, filename string) string {
 	segments := make([]string, 0, 4)
 	if prefix != "" {
@@ -329,6 +343,7 @@ func buildObjectKey(prefix, stage, taskID, filename string) string {
 	return strings.Join(segments, "/")
 }
 
+// extractDiscoveredFiles converts the raw metadata value into a slice of strings representing discovered file paths.
 func extractDiscoveredFiles(rawFiles any) []string {
 	var discoveredObjects []string
 	if slice, ok := rawFiles.([]any); ok {

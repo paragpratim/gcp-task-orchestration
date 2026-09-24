@@ -14,6 +14,7 @@ import (
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 )
 
+// Config holds configuration values for the BigQuery service.
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
@@ -21,6 +22,7 @@ type Config struct {
 	BqQueueName      string
 }
 
+// Service encapsulates the logic for managing BigQuery load jobs within the orchestrator pipeline.
 type Service struct {
 	jobsRepo     gcp.DocumentRepository[models.IntakeJobDefinition]
 	statusRepo   gcp.DocumentRepository[models.JobStatus]
@@ -29,6 +31,7 @@ type Service struct {
 	cfg          Config
 }
 
+// NewService creates a new instance of the BigQuery service with the provided repositories and configuration.
 func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, bigQueryRepo gcp.DataRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:     jobs,
@@ -39,7 +42,10 @@ func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status 
 	}
 }
 
+// nextBQCheckInterval defines the interval at which the orchestrator will poll the status of an in-flight BigQuery load job.
 const nextBQCheckInterval = 1 * time.Minute
+
+// nextTaskInterval defines the interval for scheduling the next task run.
 const nextTaskInterval = 10 * time.Second
 
 // CreateLoadJob kicks off a BigQuery load job for the files relocated by the
@@ -200,6 +206,7 @@ func (s *Service) CheckDatasetRegion(ctx context.Context, task models.PipelineTa
 	return nil
 }
 
+// failWorkflowStep updates the job status to FAILED_BIGQUERY and enqueues a GCS finalization task.
 func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tracker *models.JobStatus, message string, err error) error {
 	logger.Error("BigQuery Load Job failed", "JOB_ID", jobID, "TASK_ID", taskID, "MESSAGE", message, "ERROR", err)
 	if tracker == nil {
@@ -224,6 +231,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	return nil
 }
 
+// rescheduleBQCheck enqueues a new task to check the status of an in-flight BigQuery load job after a defined interval.
 func (s *Service) rescheduleBQCheck(ctx context.Context, jobID, taskID string) error {
 	payload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
 	payloadBytes, err := json.Marshal(payload)
@@ -237,6 +245,7 @@ func (s *Service) rescheduleBQCheck(ctx context.Context, jobID, taskID string) e
 	return nil
 }
 
+// extractDiscoveredFiles converts the raw metadata value for discovered files into a slice of strings.
 func extractDiscoveredFiles(rawFiles any) []string {
 	var discovered []string
 	if slice, ok := rawFiles.([]any); ok {

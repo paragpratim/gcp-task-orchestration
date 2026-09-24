@@ -10,20 +10,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler struct to manage BigQuery related HTTP requests.
 type Handler struct {
 	service *Service
 }
 
+// NewHandler creates a new instance of Handler with the provided service.
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// RegisterRoutes registers the BigQuery related routes with the provided router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST(routes.BigQueryLoadJobCreate, h.createBQJob)
 	rg.POST(routes.BigQueryLoadJobCheck, h.getBQJob)
 	rg.POST(routes.BigQueryRegionCheck, h.checkBQRegion)
 }
 
+// handleTask is a helper method to process a PipelineTaskPayload and execute the provided action.
 func (h *Handler) handleTask(c *gin.Context, successMsg string, action func(ctx context.Context, task models.PipelineTaskPayload) error) {
 	var task models.PipelineTaskPayload
 

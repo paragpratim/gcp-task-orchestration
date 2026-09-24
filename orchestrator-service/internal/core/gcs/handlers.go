@@ -10,19 +10,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler struct encapsulates the GCS service and provides methods to register routes and handle requests.
 type Handler struct {
 	service *Service
 }
 
+// NewHandler 	 Creates a new Handler instance with the provided Service.
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// RegisterRoutes 	 Registers the GCS routes with the provided Gin router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST(routes.GCSListFiles, h.listFiles)
 	rg.POST(routes.GCSMoveFiles, h.moveFiles)
 }
 
+// handleTask 	 A generic handler for GCS tasks that processes the request and executes the provided action.
 func (h *Handler) handleTask(c *gin.Context, successMsg string, action func(ctx context.Context, task models.PipelineTaskPayload) error) {
 	var task models.PipelineTaskPayload
 
