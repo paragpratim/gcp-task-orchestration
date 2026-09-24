@@ -55,7 +55,14 @@ func NewTypedFirestoreRepository[T any](client *firestore.Client) *FirestoreRepo
 }
 
 func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) error {
-	_, err := c.firestoreClient.Collection(collection).Doc(id).Set(ctx, data, firestore.MergeAll)
+	var docRef *firestore.DocumentRef
+	if id == "" {
+		docRef = c.firestoreClient.Collection(collection).NewDoc()
+	} else {
+		docRef = c.firestoreClient.Collection(collection).Doc(id)
+	}
+
+	_, err := docRef.Set(ctx, data, firestore.MergeAll)
 	if err != nil {
 		return fmt.Errorf("failed to Put Document to Firestore: %w", err)
 	}

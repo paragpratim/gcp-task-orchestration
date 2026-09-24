@@ -11,7 +11,6 @@ import (
 
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type Config struct {
@@ -46,14 +45,10 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 		return nil, err
 	}
 
-	if jobDefinition.ID == "" {
-		jobDefinition.ID = uuid.New().String()
-	}
-
 	jobDefinition.CreatedAt = time.Now().UTC()
 	jobDefinition.UpdatedAt = time.Now().UTC()
 
-	err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
+	err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, "", jobDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist initial intake state: %w", err)
 	}
