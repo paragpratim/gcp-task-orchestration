@@ -9,14 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler 	 Handles HTTP requests for intake job operations.
 type Handler struct {
 	service *Service
 }
 
+// NewHandler 	 Creates a new Handler instance with the provided Service.
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// RegisterRoutes 	 Registers the intake job routes with the provided Gin router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET(routes.IntakeHealth, h.appHealth)
 	rg.POST(routes.IntakeJobCreate, h.createJob)
@@ -25,6 +28,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST(routes.IntakeJobsQueue, h.queueJobs)
 }
 
+// handleJob 	 A generic handler for intake job operations that processes the request and executes the provided action.
 func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gin.Context, req models.IntakeJobDefinition) (any, error)) {
 	var req models.IntakeJobDefinition
 

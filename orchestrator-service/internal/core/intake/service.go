@@ -13,12 +13,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Config holds the configuration for the intake service.
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
 	IntakeQueueName  string
 }
 
+// Service provides methods to manage intake jobs and their statuses.
 type Service struct {
 	jobsRepo      gcp.DocumentRepository[models.IntakeJobDefinition]
 	statusRepo    gcp.DocumentRepository[models.JobStatus]
@@ -26,6 +28,7 @@ type Service struct {
 	cfg           Config
 }
 
+// NewService creates a new instance of the intake Service with the provided repositories and configuration.
 func NewService(jobsRepo gcp.DocumentRepository[models.IntakeJobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:      jobsRepo,
@@ -35,11 +38,13 @@ func NewService(jobsRepo gcp.DocumentRepository[models.IntakeJobDefinition], sta
 	}
 }
 
+// HealthCheck logs a message indicating that the service is operational.
 func (s *Service) HealthCheck(ctx *gin.Context) error {
 	logger.Debug("Service is Up and Running")
 	return nil
 }
 
+// CreateIntakeJob validates and persists a new intake job definition.
 func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
 	if err := jobDefinition.Source.Validate(); err != nil {
 		return nil, err
@@ -55,6 +60,7 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 	return &jobDefinition, nil
 }
 
+// UpdateIntakeJob validates and updates an existing intake job definition.
 func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
 	if err := jobDefinition.Source.Validate(); err != nil {
 		return nil, err
@@ -82,6 +88,7 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 	return &jobDefinition, nil
 }
 
+// DeleteIntakeJob removes an existing intake job by its ID.
 func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
 
 	existingJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
@@ -100,6 +107,7 @@ func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
 	return nil
 }
 
+// QueueActiveJobs retrieves and queues active intake jobs for processing, returning their statuses.
 func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*[]models.JobStatus, error) {
 	var jobsToQueue []models.IntakeJobDefinition
 	var jobStatuses []models.JobStatus
