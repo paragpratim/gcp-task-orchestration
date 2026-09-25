@@ -5,13 +5,13 @@ on:
     branches:
       - main
     paths:
-      - 'service/**'
+      - 'orchestrator-service/**'
       - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'service/**'
+      - 'orchestrator-service/**'
       - '.github/workflows/ci.yml'
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: service
+        working-directory: orchestrator-service
 
     steps:
       - name: Checkout code
@@ -30,7 +30,7 @@ jobs:
         with:
           go-version: '1.25.0'
           cache: true
-          cache-dependency-path: service/go.sum
+          cache-dependency-path: orchestrator-service/go.sum
 
       - name: Install dependencies
         run: go mod download
@@ -39,7 +39,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          working-directory: service
+          working-directory: orchestrator-service
           args: --timeout=5m
 
       - name: Build

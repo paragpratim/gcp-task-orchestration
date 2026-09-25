@@ -1,0 +1,217 @@
+package intake
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"orchestrator/internal/logger"
+	"orchestrator/internal/models"
+	"orchestrator/internal/routes"
+
+	"github.com/gin-gonic/gin"
+)
+
+// Handler 	 Handles HTTP requests for intake job operations.
+type Handler struct {
+	service *Service
+}
+
+// NewHandler 	 Creates a new Handler instance with the provided Service.
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
+}
+
+// RegisterRoutes 	 Registers the intake job routes with the provided Gin router group.
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	rg.GET(routes.IntakeHealth, h.appHealth)
+	rg.POST(routes.IntakeJobCreate, h.createJob)
+	rg.GET(routes.IntakeJobGet, h.getJob)
+	rg.GET(routes.IntakeJobGetAll, h.getAllJobs)
+	rg.PUT(routes.IntakeJobUpdate, h.updateJob)
+	rg.DELETE(routes.IntakeJobDelete, h.deleteJob)
+	rg.POST(routes.IntakeJobsQueue, h.queueJobs)
+}
+
+// handleJob 	 A generic handler for intake job operations that processes the request and executes the provided action.
+func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gin.Context, req models.IntakeJobDefinition) (any, error)) {
+	var req models.IntakeJobDefinition
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Error("Failed to bind JSON payload", "ERROR", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
+		return
+	}
+
+	resp, err := action(c, req)
+	if err != nil {
+		logger.Error("Job execution failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(successStatus, resp)
+}
+
+// appHealth 	 Responds to health check requests.
+// @Summary      Health check
+// @Description  Responds with an OK status if the api is running.
+// @Tags         health
+// @Produce      plain
+// @Success      200  {string}  string  "OK"
+// @Router       /intake/health [get]
+func (h *Handler) appHealth(c *gin.Context) {
+	err := h.service.HealthCheck(c)
+	if err != nil {
+		logger.Error("Health check failed", "ERROR", err)
+		c.String(http.StatusInternalServerError, "Service Unavailable")
+		return
+	}
+	c.String(http.StatusOK, "OK")
+}
+
+// createJob 	 Handles the creation of a new intake job.
+// @Summary      Create Intake Job
+// @Description  Accepts a new intake job request and processes it.
+// @Tags         intake
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Request Payload"
+// @Success      201  {object}  map[string]string "Job Created"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job [post]
+func (h *Handler) createJob(c *gin.Context) {
+	h.handleJob(c, http.StatusCreated, func(c *gin.Context, req models.IntakeJobDefinition) (any, error) {
+		return h.service.CreateIntakeJob(c, req)
+	})
+}
+
+// handleJobGet 	 Handles the retrieval of a specific intake job by its ID.
+// @Summary      Get Intake Job
+// @Description  Retrieves an existing intake job by its ID.
+// @Tags         intake
+// @Produce      json
+// @Param        id   path      string  true  "Intake Job ID"
+// @Success      200  {object}  models.IntakeJobDefinition "Job Retrieved"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job/{id} [get]
+func (h *Handler) getJob(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		logger.Error("Job retrieval failed: missing job ID", "ERROR", nil)
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Job tracking identifier 'id' is required"})
+		return
+	}
+
+	job, err := h.service.GetIntakeJob(c, id)
+	if err != nil {
+		logger.Error("Job retrieval failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, job)
+}
+
+// handleJobGetAll 	 Handles the retrieval of all intake jobs.
+// @Summary      Get All Intake Jobs
+// @Description  Retrieves all existing intake jobs.
+// @Tags         intake
+// @Produce      json
+// @Success      200  {array}   models.IntakeJobDefinition "Jobs Retrieved"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/jobs [get]
+func (h *Handler) getAllJobs(c *gin.Context) {
+	jobs, err := h.service.GetAllIntakeJobs(c)
+	if err != nil {
+		logger.Error("Jobs retrieval failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, jobs)
+}
+
+// updateJob 	 Handles the update of an existing intake job.
+// @Summary      Update Intake Job
+// @Description  Accepts an update request for an existing intake job and processes it.
+// @Tags         intake
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Update Payload"
+// @Success      200  {object}  map[string]string "Job Updated"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job [put]
+func (h *Handler) updateJob(c *gin.Context) {
+	h.handleJob(c, http.StatusOK, func(c *gin.Context, req models.IntakeJobDefinition) (any, error) {
+		return h.service.UpdateIntakeJob(c, req)
+	})
+}
+
+// deleteJob 	 Handles the deletion of an existing intake job.
+// @Summary      Delete Intake Job
+// @Description  Deletes an existing intake job by its ID.
+// @Tags         intake
+// @Produce      json
+// @Param        id   path      string  true  "Intake Job ID"
+// @Success      200  {object}  map[string]string "Job Deleted"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/job/{id} [delete]
+func (h *Handler) deleteJob(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		logger.Error("Job deletion failed: missing job ID", "ERROR", nil)
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Job tracking identifier 'id' is required"})
+		return
+	}
+
+	if err := h.service.DeleteIntakeJob(c, id); err != nil {
+		logger.Error("Job deletion failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "Job Deleted", "id": id})
+}
+
+// queueJobs 	 Queues all the active intake jobs.
+// @Summary      Queue Active Intake Jobs
+// @Description  Queues all the active intake jobs for processing.
+// @Tags         intake
+// @Accept       json
+// @Produce      json
+// @Param        request  body      models.IntakeJobDefinition  true  "Queue Jobs Request Payload"
+// @Success      200  {object}  map[string]string "Jobs Queued"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/jobs/queue [post]
+func (h *Handler) queueJobs(c *gin.Context) {
+	var req models.IntakeJobDefinition
+
+	// Read the raw body bytes directly
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		logger.Error("Failed to read request body", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read request body"})
+		return
+	}
+
+	// unmarshal if a JSON payload was actually provided
+	trimmedBody := bytes.TrimSpace(bodyBytes)
+	if len(trimmedBody) > 0 {
+		if err := json.Unmarshal(trimmedBody, &req); err != nil {
+			logger.Error("Failed to unmarshal JSON payload for queue filter", "ERROR", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload schema: " + err.Error()})
+			return
+		}
+	}
+
+	// Pass the parsed (or empty) struct to your service layer
+	resp, err := h.service.QueueActiveJobs(c, req)
+	if err != nil {
+		logger.Error("Queue jobs execution failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}

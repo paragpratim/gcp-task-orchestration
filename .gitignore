@@ -33,8 +33,14 @@ go.work.sum
 
 # Build artifacts
 build/
-service/build/
-service/service
+orchestrator-service/build/
+orchestrator-service/orchestrator-service
 
 # task
 .task/
+
+.DS_Store
+terraform/.terraform.lock.hcl
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/*.tfstate.backup

@@ -1,12 +1,36 @@
 version: '3.8'
 
 services:
+  firestore-emulator:
+    image: google/cloud-sdk:alpine
+    ports:
+      - "8081:8081"
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache openjdk21-jre && 
+      gcloud components install beta cloud-firestore-emulator --quiet && 
+      gcloud emulators firestore start --host-port=0.0.0.0:8081
+      "
+
+  cloud-tasks-emulator:
+    image: ghcr.io/aertje/cloud-tasks-emulator:latest
+    ports:
+      - "8123:8123"
+    # Create the internal queue matching your service configuration on boot
+    command:
+      - host=0.0.0.0
+      - port=8123
+      - INITIAL_QUEUES=projects/local-project/locations/europe-west4/queues/orchestrator-intake-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-gcs-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-bq-queue-local
+
   orchestrator:
     build:
-      context: ./service
+      context: ./orchestrator-service 
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
       - PORT=8080
     restart: unless-stopped
+    depends_on:
+      - firestore-emulator
+      - cloud-tasks-emulator
