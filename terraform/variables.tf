@@ -16,6 +16,6 @@ variable "my_domain" {
 variable "env" {
   description = "Deployment environment used to build queue names for the task orchestrator."
   type        = string
-  default     = "local"
+  default     = "dev"
 }
 

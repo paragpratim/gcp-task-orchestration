@@ -8,7 +8,8 @@ resource "google_project_service" "required_apis" {
     "iap.googleapis.com",
     "storage.googleapis.com",
     "cloudtasks.googleapis.com",
-    "firestore.googleapis.com"
+    "firestore.googleapis.com",
+    "compute.googleapis.com"
   ])
 
   service            = each.value

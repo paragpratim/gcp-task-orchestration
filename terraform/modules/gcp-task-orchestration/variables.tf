@@ -19,6 +19,6 @@ variable "my_domain" {
 variable "env" {
   description = "The deployment environment used for queue naming"
   type        = string
-  default     = "local"
+  default     = "dev"
 }
 

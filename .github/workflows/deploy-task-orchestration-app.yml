@@ -16,8 +16,8 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
-  REGION: europe-west4
-  ARTIFACT_REGISTRY: europe-west4-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
+  REGION: europe-west1
+  ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
 
 jobs:
   build-and-deploy:
