@@ -4,4 +4,5 @@ module "gcp_task_orchestration" {
   project_id = var.project_id
   region     = var.region
   my_domain  = var.my_domain
+  env        = var.env
 }

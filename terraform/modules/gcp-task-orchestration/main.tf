@@ -1,10 +1,3 @@
-# Create service account
-resource "google_service_account" "orchestrator_service_account" {
-  account_id   = "svc-cr-task-orchestrator"
-  display_name = "Task Orchestrator Service Account"
-  description  = "Service account for task orchestrator application"
-}
-
 # Enable required APIs
 resource "google_project_service" "required_apis" {
   for_each = toset([
@@ -13,11 +6,20 @@ resource "google_project_service" "required_apis" {
     "artifactregistry.googleapis.com",
     "run.googleapis.com",
     "iap.googleapis.com",
-    "storage.googleapis.com"
+    "storage.googleapis.com",
+    "cloudtasks.googleapis.com",
+    "firestore.googleapis.com"
   ])
 
   service            = each.value
   disable_on_destroy = false
+}
+
+# Create service account for task orchestrator application
+resource "google_service_account" "orchestrator_service_account" {
+  account_id   = "svc-cr-task-orchestrator"
+  display_name = "Task Orchestrator Service Account"
+  description  = "Service account for task orchestrator application"
 }
 
 # Assign multiple roles to service account
@@ -25,7 +27,11 @@ resource "google_project_iam_member" "orchestrator_service_account_roles" {
   for_each = toset([
     "roles/bigquery.admin",
     "roles/storage.admin",
-    "roles/artifactregistry.writer"
+    "roles/artifactregistry.writer",
+    "roles/cloudtasks.admin",
+    "roles/datastore.user",
+    "roles/iap.httpsResourceAccessor",
+    "roles/run.admin"
   ])
 
   project    = var.project_id
@@ -53,19 +59,13 @@ resource "google_project_iam_member" "iap_domain_access" {
   depends_on = [google_project_service.required_apis]
 }
 
-# VPC with private access to Google APIs
-resource "google_compute_network" "orchestrator_vpc" {
-  name                    = "orchestrator-vpc"
-  auto_create_subnetworks = false
-}
+# Create Firestore database for state management
+resource "google_firestore_database" "orchestrator_firestore" {
+  name             = "orchestrator"
+  project          = var.project_id
+  location_id      = var.region
+  type             = "FIRESTORE_NATIVE"
+  database_edition = "STANDARD"
 
-# Subnet for orchestrator cloud run services
-resource "google_compute_subnetwork" "orchestrator_subnet" {
-  name                     = "orchestrator-subnet"
-  ip_cidr_range            = "10.0.0.0/24"
-  network                  = google_compute_network.orchestrator_vpc.id
-  region                   = var.region
-  private_ip_google_access = true
-
-  depends_on = [google_compute_network.orchestrator_vpc]
+  depends_on = [google_project_service.required_apis]
 }
