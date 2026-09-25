@@ -93,7 +93,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	statusTracker.Status = models.StatusProcessingGCS
 	statusTracker.Message = "Scanning storage bucket boundaries against pattern criteria."
 	statusTracker.UpdatedAt = time.Now().UTC()
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		logger.Error("Failed updating execution trace boundary ", "JOB_ID", jobID, "TASK_ID", taskID, "ERROR", err)
 		return nil
 	}
@@ -139,7 +139,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		statusTracker.Status = models.StatusSkipped
 		statusTracker.Message = fmt.Sprintf("GCS scan finalized. Zero matching files identified for criteria: %s", pattern)
 		statusTracker.UpdatedAt = time.Now().UTC()
-		_ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker)
+		_, _ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker)
 		return nil // Short-circuit execution loop cleanly; downstream pipeline calls are skipped
 	}
 
@@ -148,7 +148,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	statusTracker.Message = fmt.Sprintf("Discovered %d target assets matching pattern schemas.", len(matchedObjects))
 	statusTracker.UpdatedAt = time.Now().UTC()
 
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting discovered assets state to tracking document", err)
 		return nil
 	}
@@ -204,7 +204,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 	statusTracker.Status = models.StatusMovingGCS
 	statusTracker.Message = "Relocating discovered assets to processing storage zone."
 	statusTracker.UpdatedAt = time.Now().UTC()
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed updating execution trace boundary", err)
 		return nil
 	}
@@ -241,7 +241,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 	statusTracker.Message = fmt.Sprintf("Successfully relocated %d items to processing storage zone.", len(relocatedURIs))
 	statusTracker.UpdatedAt = time.Now().UTC()
 
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed locking updated metadata URI configurations", err)
 		return nil
 	}
@@ -296,8 +296,7 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 	statusTracker.UpdatedAt = time.Now().UTC()
 	statusTracker.Metadata = map[string]any{}
 
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
-
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting requeued job status", err)
 		return nil
 	}
@@ -330,7 +329,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	tracker.Status = models.StatusFailedGCS
 	tracker.Message = message
 	tracker.UpdatedAt = time.Now().UTC()
-	_ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker)
+	_, _ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker)
 }
 
 // buildObjectKey constructs a GCS object key by combining the prefix, stage, task ID, and filename.

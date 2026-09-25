@@ -323,6 +323,51 @@ paths:
       summary: Delete Intake Job
       tags:
       - intake
+    get:
+      description: Retrieves an existing intake job by its ID.
+      parameters:
+      - description: Intake Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Retrieved
+          schema:
+            $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Intake Job
+      tags:
+      - intake
+  /intake/jobs:
+    get:
+      description: Retrieves all existing intake jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Jobs Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get All Intake Jobs
+      tags:
+      - intake
   /intake/jobs/queue:
     post:
       consumes:

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
@@ -16,7 +18,7 @@ import (
 
 // DocumentRepository is a generic interface for interacting with a Firestore database.
 type DocumentRepository[T any] interface {
-	Put(ctx context.Context, collection, id string, data T) error
+	Put(ctx context.Context, collection, id string, data T) (*T, error)
 	Get(ctx context.Context, collection, id string) (*T, error)
 	GetAll(ctx context.Context, collection string) (*[]T, error)
 	Delete(ctx context.Context, collection, id string) error
@@ -60,20 +62,41 @@ func NewTypedFirestoreRepository[T any](client *firestore.Client) *FirestoreRepo
 }
 
 // Put adds or updates a document in the specified collection with the given ID and data.
-func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) error {
+func (c *FirestoreRepository[T]) Put(ctx context.Context, collection, id string, data T) (*T, error) {
 	// If id is empty, generate a new document reference with a random ID
 	var docRef *firestore.DocumentRef
 	if id == "" {
 		docRef = c.firestoreClient.Collection(collection).NewDoc()
+		id = docRef.ID
 	} else {
 		docRef = c.firestoreClient.Collection(collection).Doc(id)
 	}
 
-	_, err := docRef.Set(ctx, data, firestore.MergeAll)
+	// Convert the struct to a map using the native Firestore mapping function.
+	mapData, err := structToFirestoreMap(data)
 	if err != nil {
-		return fmt.Errorf("failed to Put Document to Firestore: %w", err)
+		return nil, fmt.Errorf("failed to map generic struct natively: %w", err)
 	}
-	return nil
+	// Ensure the ID is included in the map data.
+	mapData["id"] = id
+
+	// Use MergeAll to merge the new data with existing data in Firestore.
+	_, err = docRef.Set(ctx, mapData, firestore.MergeAll)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Put Document to Firestore: %w", err)
+	}
+
+	// Retrieve the document after setting it to ensure we return the latest data.
+	doc, err := docRef.Get(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve Document after Put: %w", err)
+	}
+	var result T
+	if err := doc.DataTo(&result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall Document after Put: %w", err)
+	}
+
+	return &result, nil
 }
 
 // Get retrieves a document from the specified collection with the given ID and unmarshals it into the specified type.
@@ -127,4 +150,33 @@ func (c *FirestoreRepository[T]) Delete(ctx context.Context, collection, id stri
 // Close explicitly releases connections in the Firestore client transport layers.
 func (c *FirestoreRepository[T]) Close() error {
 	return c.firestoreClient.Close()
+}
+
+// structToFirestoreMap converts a struct to a map[string]any, using the "firestore" struct tags to determine the field names.
+func structToFirestoreMap(obj any) (map[string]any, error) {
+	v := reflect.Indirect(reflect.ValueOf(obj))
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("provided data is not a struct")
+	}
+
+	t := v.Type()
+	res := make(map[string]any)
+
+	for i := 0; i < v.NumField(); i++ {
+		tag := t.Field(i).Tag.Get("firestore")
+		if tag == "" || tag == "-" {
+			continue
+		}
+
+		parts := strings.Split(tag, ",")
+		field := v.Field(i)
+
+		// Check omitempty short-circuit
+		if len(parts) > 1 && parts[1] == "omitempty" && field.IsZero() {
+			continue
+		}
+
+		res[parts[0]] = field.Interface()
+	}
+	return res, nil
 }

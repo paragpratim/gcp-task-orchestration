@@ -76,7 +76,7 @@ func (s *Service) CreateLoadJob(ctx context.Context, task models.PipelineTaskPay
 	statusTracker.Status = models.StatusProcessingBigQuery
 	statusTracker.Message = "Submitting BigQuery load job for relocated GCS files."
 	statusTracker.UpdatedAt = time.Now().UTC()
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		return fmt.Errorf("failed persisting BigQuery load job state transition for JOB_ID %s: %w", jobID, err)
 	}
 
@@ -110,7 +110,7 @@ func (s *Service) CreateLoadJob(ctx context.Context, task models.PipelineTaskPay
 	statusTracker.Metadata[models.MetadataKeyBigQueryJobID] = bqJobID
 	statusTracker.Message = fmt.Sprintf("BigQuery load job %s started successfully for %d GCS files.", bqJobID, len(fileURIs))
 	statusTracker.UpdatedAt = time.Now().UTC()
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		return s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting BigQuery job ID back into tracker", err)
 	}
 
@@ -173,7 +173,7 @@ func (s *Service) CheckLoadJobStatus(ctx context.Context, task models.PipelineTa
 		statusTracker.Status = models.StatusCompletedBigQuery
 		statusTracker.Message = "BigQuery load job completed successfully. Finalizing GCS run."
 		statusTracker.UpdatedAt = time.Now().UTC()
-		if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
+		if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 			return fmt.Errorf("failed persisting successful BigQuery job state for job %s: %w", jobID, err)
 		}
 
@@ -215,7 +215,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	tracker.Status = models.StatusFailedBQ
 	tracker.Message = message
 	tracker.UpdatedAt = time.Now().UTC()
-	if err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker); err != nil {
+	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker); err != nil {
 		return fmt.Errorf("failed persisting failed BigQuery state before finalization route for job %s: %w", jobID, err)
 	}
 

@@ -50,14 +50,36 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 		return nil, err
 	}
 
-	jobDefinition.CreatedAt = time.Now().UTC()
-	jobDefinition.UpdatedAt = time.Now().UTC()
+	now := time.Now().UTC()
+	jobDefinition.CreatedAt = &now
+	jobDefinition.UpdatedAt = &now
 
-	err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, "", jobDefinition)
+	result, err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, "", jobDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to persist initial intake state: %w", err)
 	}
-	return &jobDefinition, nil
+	return result, nil
+}
+
+// GetIntakeJob retrieves an intake job definition by its ID from the repository.
+func (s *Service) GetIntakeJob(ctx *gin.Context, id string) (*models.IntakeJobDefinition, error) {
+	intakeJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve intake job: %w", err)
+	}
+	if intakeJob == nil {
+		return nil, fmt.Errorf("intake job with id %s not found", id)
+	}
+	return intakeJob, nil
+}
+
+// GetAllIntakeJobs retrieves all intake job definitions from the repository.
+func (s *Service) GetAllIntakeJobs(ctx *gin.Context) (*[]models.IntakeJobDefinition, error) {
+	allJobs, err := s.jobsRepo.GetAll(ctx, s.cfg.JobsCollection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve all intake jobs: %w", err)
+	}
+	return allJobs, nil
 }
 
 // UpdateIntakeJob validates and updates an existing intake job definition.
@@ -78,14 +100,15 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 		return nil, fmt.Errorf("job target with id %s does not exist", jobDefinition.ID)
 	}
 
-	jobDefinition.UpdatedAt = time.Now().UTC()
+	now := time.Now().UTC()
+	jobDefinition.UpdatedAt = &now
 
-	err = s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
+	result, err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
 	if err != nil {
 		return nil, fmt.Errorf("failed to overwrite persistent intake state: %w", err)
 	}
 
-	return &jobDefinition, nil
+	return result, nil
 }
 
 // DeleteIntakeJob removes an existing intake job by its ID.
@@ -154,7 +177,7 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			Metadata:  map[string]any{models.MetadataKeyTaskID: taskID},
 		}
 
-		err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
+		_, err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
 		if err != nil {
 			return nil, fmt.Errorf("failed to persist job status for job %s: %w", job.ID, err)
 		}

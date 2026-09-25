@@ -338,6 +338,42 @@ const docTemplate = `{
             }
         },
         "/intake/job/{id}": {
+            "get": {
+                "description": "Retrieves an existing intake job by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Get Intake Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Intake Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Deletes an existing intake job by its ID.",
                 "produces": [
@@ -363,6 +399,38 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/intake/jobs": {
+            "get": {
+                "description": "Retrieves all existing intake jobs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Get All Intake Jobs",
+                "responses": {
+                    "200": {
+                        "description": "Jobs Retrieved",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
                             }
                         }
                     },

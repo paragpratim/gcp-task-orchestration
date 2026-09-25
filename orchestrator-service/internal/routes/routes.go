@@ -8,6 +8,8 @@ const (
 
 	IntakeHealth    = "/intake/health"
 	IntakeJobCreate = "/intake/job"
+	IntakeJobGet    = "/intake/job/:id"
+	IntakeJobGetAll = "/intake/jobs"
 	IntakeJobUpdate = "/intake/job"
 	IntakeJobDelete = "/intake/job/:id"
 	IntakeJobsQueue = "/intake/jobs/queue"

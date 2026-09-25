@@ -71,7 +71,7 @@ type IntakeJobDefinition struct {
 	Description string           `json:"description,omitempty" firestore:"description,omitempty"`
 	Source      SourceDefinition `json:"source" firestore:"source"`
 	Target      TargetDefinition `json:"target" firestore:"target"`
-	CreatedAt   time.Time        `json:"created_at" firestore:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at" firestore:"updated_at"`
+	CreatedAt   *time.Time       `json:"created_at,omitempty" firestore:"created_at"`
+	UpdatedAt   *time.Time       `json:"updated_at,omitempty" firestore:"updated_at"`
 	Metadata    map[string]any   `json:"metadata,omitempty" firestore:"metadata,omitempty"`
 }
