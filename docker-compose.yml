@@ -18,6 +18,8 @@ services:
       - "8123:8123"
     # Create the internal queue matching your service configuration on boot
     command:
+      - host=0.0.0.0
+      - port=8123
       - INITIAL_QUEUES=projects/local-project/locations/europe-west4/queues/orchestrator-intake-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-gcs-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-bq-queue-local
 
   orchestrator:
