@@ -32,3 +32,23 @@ output "subnetwork_ip_cidr_range" {
   description = "The subnet IP CIDR range"
   value       = module.gcp_task_orchestration.subnetwork_ip_cidr_range
 }
+
+output "firestore_database_name" {
+  description = "The Firestore database name created by the orchestrator module"
+  value       = module.gcp_task_orchestration.firestore_database_name
+}
+
+output "task_queue_names" {
+  description = "The Cloud Tasks queue names created by the orchestrator module"
+  value       = module.gcp_task_orchestration.task_queue_names
+}
+
+output "test_bucket_names" {
+  description = "Names of the test GCS buckets created for validation"
+  value       = values(google_storage_bucket.test_buckets)[*].name
+}
+
+output "test_dataset_ids" {
+  description = "Dataset IDs of the test BigQuery datasets created for validation"
+  value       = values(google_bigquery_dataset.test_datasets)[*].dataset_id
+}

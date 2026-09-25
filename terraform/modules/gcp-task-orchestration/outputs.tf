@@ -32,3 +32,13 @@ output "subnetwork_ip_cidr_range" {
   description = "The subnet IP CIDR range"
   value       = google_compute_subnetwork.orchestrator_subnet.ip_cidr_range
 }
+
+output "firestore_database_name" {
+  description = "The Firestore database name"
+  value       = google_firestore_database.orchestrator_firestore.name
+}
+
+output "task_queue_names" {
+  description = "The Cloud Tasks queue names created for the orchestrator"
+  value       = values(google_cloud_tasks_queue.queues)[*].name
+}
