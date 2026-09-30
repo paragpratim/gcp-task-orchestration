@@ -33,11 +33,12 @@ resource "google_cloud_tasks_queue" "queues" {
   depends_on = [google_project_service.required_apis]
 }
 
-# Assign multiple roles to service account
+# Assign project-scoped roles to the dispatcher service account.
+# Cloud Run invocation permissions must be granted on the specific Cloud Run service
+# resource (for example via google_cloud_run_service_iam_member), not at the project level.
 resource "google_project_iam_member" "dispatcher_service_account_roles" {
   for_each = toset([
     "roles/cloudtasks.admin",
-    "roles/run.executor",
     "roles/iap.httpsResourceAccessor",
   ])
 

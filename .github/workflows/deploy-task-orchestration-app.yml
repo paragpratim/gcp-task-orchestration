@@ -135,6 +135,14 @@ jobs:
             --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
 
+      - name: Grant task dispatcher service account Cloud Run invoker access
+        run: |
+          echo "Granting Cloud Run invoker permission to the task dispatcher service account..."
+          gcloud run services add-iam-policy-binding task-orchestration-app \
+            --region=${{ env.REGION }} \
+            --member="serviceAccount:svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --role="roles/run.invoker"
+
       - name: Get service URL
         id: get-url
         run: |
