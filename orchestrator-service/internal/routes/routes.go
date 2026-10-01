@@ -6,13 +6,14 @@ const APIPrefix = "/api/v1"
 const (
 	// --- Intake endpoints ---
 
-	IntakeHealth    = "/intake/health"
-	IntakeJobCreate = "/intake/job"
-	IntakeJobGet    = "/intake/job/:id"
-	IntakeJobGetAll = "/intake/jobs"
-	IntakeJobUpdate = "/intake/job"
-	IntakeJobDelete = "/intake/job/:id"
-	IntakeJobsQueue = "/intake/jobs/queue"
+	IntakeHealth     = "/intake/health"
+	IntakeJobCreate  = "/intake/job"
+	IntakeJobGet     = "/intake/job/:id"
+	IntakeJobGetAll  = "/intake/jobs"
+	IntakeJobUpdate  = "/intake/job"
+	IntakeJobDelete  = "/intake/job/:id"
+	IntakeJobsQueue  = "/intake/jobs/queue"
+	IntakeJobsStatus = "/intake/jobs/status"
 
 	// --- GCS endpoints ---
 

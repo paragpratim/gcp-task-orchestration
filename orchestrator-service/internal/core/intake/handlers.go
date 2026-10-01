@@ -28,6 +28,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST(routes.IntakeJobCreate, h.createJob)
 	rg.GET(routes.IntakeJobGet, h.getJob)
 	rg.GET(routes.IntakeJobGetAll, h.getAllJobs)
+	rg.GET(routes.IntakeJobsStatus, h.getJobStatus)
 	rg.PUT(routes.IntakeJobUpdate, h.updateJob)
 	rg.DELETE(routes.IntakeJobDelete, h.deleteJob)
 	rg.POST(routes.IntakeJobsQueue, h.queueJobs)
@@ -214,4 +215,23 @@ func (h *Handler) queueJobs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+// getJobStatus 	 Handles the retrieval of the status of all intake jobs.
+// @Summary      Get Intake Job Statuses
+// @Description  Retrieves the status of all intake jobs.
+// @Tags         intake
+// @Produce      json
+// @Success      200  {array}   models.JobStatus "Job Statuses Retrieved"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /intake/jobs/status [get]
+func (h *Handler) getJobStatus(c *gin.Context) {
+	statuses, err := h.service.GetAllJobStatuses(c)
+	if err != nil {
+		logger.Error("Job statuses retrieval failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, statuses)
 }

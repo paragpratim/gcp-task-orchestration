@@ -26,6 +26,36 @@ definitions:
     - FileTypeTFSavedModel
     - FileTypeXGBoostBooster
     - FileTypeIceberg
+  orchestrator_internal_models.ExecutionStatus:
+    enum:
+    - QUEUED
+    - COMPLETED_SKIPPED
+    - SUCCESS
+    - PROCESSING_GCS
+    - MOVING_GCS
+    - COMPLETED_GCS
+    - FAILED_GCS
+    - PROCESSING_BIGQUERY
+    - COMPLETED_BIGQUERY
+    - FAILED_BIGQUERY
+    - PROCESSING_DATAFLOW
+    - COMPLETED_DATAFLOW
+    - FAILED_DATAFLOW
+    type: string
+    x-enum-varnames:
+    - StatusQueued
+    - StatusSkipped
+    - StatusSuccess
+    - StatusProcessingGCS
+    - StatusMovingGCS
+    - StatusCompletedGCS
+    - StatusFailedGCS
+    - StatusProcessingBigQuery
+    - StatusCompletedBigQuery
+    - StatusFailedBQ
+    - StatusProcessingDataflow
+    - StatusCompletedDataflow
+    - StatusFailedDataflow
   orchestrator_internal_models.IntakeJobDefinition:
     properties:
       created_at:
@@ -43,6 +73,22 @@ definitions:
         $ref: '#/definitions/orchestrator_internal_models.SourceDefinition'
       target:
         $ref: '#/definitions/orchestrator_internal_models.TargetDefinition'
+      updated_at:
+        type: string
+    type: object
+  orchestrator_internal_models.JobStatus:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      status:
+        allOf:
+        - $ref: '#/definitions/orchestrator_internal_models.ExecutionStatus'
+        description: Holds the ExecutionStatus string
       updated_at:
         type: string
     type: object
@@ -396,6 +442,27 @@ paths:
               type: string
             type: object
       summary: Queue Active Intake Jobs
+      tags:
+      - intake
+  /intake/jobs/status:
+    get:
+      description: Retrieves the status of all intake jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Statuses Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobStatus'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Intake Job Statuses
       tags:
       - intake
 swagger: "2.0"
