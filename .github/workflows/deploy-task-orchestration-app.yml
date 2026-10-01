@@ -136,6 +136,7 @@ jobs:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
           APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
           GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
           FIRESTORE_DB: orchestrator
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |

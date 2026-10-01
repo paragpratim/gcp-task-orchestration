@@ -54,6 +54,8 @@ spec:
               value: ${APP_ENV}
             - name: GCP_PROJECT_ID
               value: ${PROJECT_ID}
+            - name: GCP_REGION
+              value: ${REGION}
             - name: FIRESTORE_DB
               value: ${FIRESTORE_DB}
             - name: QUEUE_SERVICE_ACCOUNT

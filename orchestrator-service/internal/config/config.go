@@ -13,6 +13,7 @@ type AppConfig struct {
 	Port        string `json:"port"`
 	// GCP Project configuration
 	ProjectID           string `json:"project_id"`
+	Region              string `json:"region"`
 	FirestoreDB         string `json:"firestore_db"`
 	BaseURL             string `json:"base_url"`
 	ServiceAccountEmail string `json:"service_account_email"`
@@ -34,6 +35,7 @@ func LoadConfig() *AppConfig {
 		Environment:         env,
 		Port:                getEnv("PORT", "8080"),
 		ProjectID:           getEnv("GCP_PROJECT_ID", "local-project"),
+		Region:              getEnv("GCP_REGION", "europe-west1"),
 		FirestoreDB:         getEnv("FIRESTORE_DB", "(default)"),
 		BaseURL:             getEnv("QUEUE_BASE_URL", "localhost:8080"),
 		ServiceAccountEmail: getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),

@@ -22,12 +22,14 @@ type TaskRepository interface {
 // CloudTasksRepository is a concrete implementation of the TaskRepository interface for Google Cloud Tasks.
 type CloudTasksRepository struct {
 	tasksClient         *cloudtasks.Client
+	projectID           string
+	region              string
 	baseURL             string
 	serviceAccountEmail string
 }
 
 // NewCloudTasksRepository creates a new instance of CloudTasksRepository.
-func NewCloudTasksRepository(ctx context.Context, env string, baseURL string, serviceAccountEmail string) (*CloudTasksRepository, error) {
+func NewCloudTasksRepository(ctx context.Context, env string, projectID string, region string, baseURL string, serviceAccountEmail string) (*CloudTasksRepository, error) {
 	//Local Emulator Setup
 	if env == "local" {
 		// Set the environment variable for the Cloud Tasks emulator
@@ -41,6 +43,8 @@ func NewCloudTasksRepository(ctx context.Context, env string, baseURL string, se
 		}
 		return &CloudTasksRepository{
 			tasksClient:         client,
+			projectID:           projectID,
+			region:              region,
 			baseURL:             baseURL,
 			serviceAccountEmail: serviceAccountEmail,
 		}, nil
@@ -53,13 +57,15 @@ func NewCloudTasksRepository(ctx context.Context, env string, baseURL string, se
 	}
 	return &CloudTasksRepository{
 		tasksClient:         client,
+		projectID:           projectID,
+		region:              region,
 		baseURL:             baseURL,
 		serviceAccountEmail: serviceAccountEmail,
 	}, nil
 }
 
 // Put enqueues a task into the specified Cloud Tasks queue with an optional delay.
-func (c *CloudTasksRepository) Put(ctx context.Context, queuePath string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
+func (c *CloudTasksRepository) Put(ctx context.Context, queueName string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
 	fullURL := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	task := &taskspb.Task{
@@ -85,8 +91,10 @@ func (c *CloudTasksRepository) Put(ctx context.Context, queuePath string, method
 		task.ScheduleTime = timestamppb.New(scheduleTime)
 	}
 
+	fullyQualifiedQueuePath := fmt.Sprintf("projects/%s/locations/%s/queues/%s", c.projectID, c.region, queueName)
+
 	req := &taskspb.CreateTaskRequest{
-		Parent: queuePath,
+		Parent: fullyQualifiedQueuePath,
 		Task:   task,
 	}
 

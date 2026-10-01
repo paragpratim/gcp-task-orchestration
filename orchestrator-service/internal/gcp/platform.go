@@ -18,7 +18,7 @@ type Platform struct {
 }
 
 // NewPlatform initializes and returns a new Platform instance with the provided configuration.
-func NewPlatform(ctx context.Context, env, projectID, firestoreDB, baseURL, saEmail string) (*Platform, error) {
+func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseURL, saEmail string) (*Platform, error) {
 	// Initialize Firestore repository
 	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID, firestoreDB)
 	if err != nil {
@@ -26,7 +26,7 @@ func NewPlatform(ctx context.Context, env, projectID, firestoreDB, baseURL, saEm
 	}
 
 	// Initialize Cloud Tasks repository
-	tasksRepo, err := NewCloudTasksRepository(ctx, env, baseURL, saEmail)
+	tasksRepo, err := NewCloudTasksRepository(ctx, env, projectID, region, baseURL, saEmail)
 	if err != nil {
 		_ = fsRepo.Close()
 		return nil, fmt.Errorf("failed tasks intake: %w", err)

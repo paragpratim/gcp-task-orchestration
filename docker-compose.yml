@@ -20,7 +20,7 @@ services:
     command:
       - host=0.0.0.0
       - port=8123
-      - INITIAL_QUEUES=projects/local-project/locations/europe-west4/queues/orchestrator-intake-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-gcs-queue-local,projects/local-project/locations/europe-west4/queues/orchestrator-bq-queue-local
+      - INITIAL_QUEUES=projects/local-project/locations/europe-west1/queues/orchestrator-intake-queue-local,projects/local-project/locations/europe-west1/queues/orchestrator-gcs-queue-local,projects/local-project/locations/europe-west1/queues/orchestrator-bq-queue-local
 
   orchestrator:
     build:
