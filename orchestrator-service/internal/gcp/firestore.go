@@ -31,7 +31,7 @@ type FirestoreRepository[T any] struct {
 }
 
 // NewFirestoreRepository creates a new instance of FirestoreRepository.
-func NewFirestoreRepository[T any](ctx context.Context, env string, projectId string) (*FirestoreRepository[T], error) {
+func NewFirestoreRepository[T any](ctx context.Context, env string, projectId string, firestoreDB string) (*FirestoreRepository[T], error) {
 	//Local Emulator Setup
 	if env == "local" {
 		// Set the environment variable for the Cloud Tasks emulator
@@ -48,7 +48,7 @@ func NewFirestoreRepository[T any](ctx context.Context, env string, projectId st
 		}, nil
 	}
 
-	client, err := firestore.NewClient(ctx, projectId)
+	client, err := firestore.NewClientWithDatabase(ctx, projectId, firestoreDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create firestore client: %w", err)
 	}

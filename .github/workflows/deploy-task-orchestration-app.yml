@@ -15,11 +15,21 @@ on:
         description: 'Image tag (leave empty for git SHA)'
         required: false
         type: string
+      app_env:
+        description: 'Application environment'
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
 
 env:
   PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
   REGION: europe-west1
   ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
+  APP_ENV: ${{ github.event.inputs.app_env || 'dev' }}
 
 jobs:
   build-and-deploy:
@@ -124,8 +134,9 @@ jobs:
       - name: Update Cloud Run service YAML with environment variables and image tags
         env:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
-          APP_ENV: dev
+          APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
           GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
+          FIRESTORE_DB: orchestrator
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           cp cloud-run.yml cloud-run-deploy.yml

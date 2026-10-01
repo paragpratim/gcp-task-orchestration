@@ -54,6 +54,8 @@ spec:
               value: ${APP_ENV}
             - name: GCP_PROJECT_ID
               value: ${PROJECT_ID}
+            - name: FIRESTORE_DB
+              value: ${FIRESTORE_DB}
             - name: QUEUE_SERVICE_ACCOUNT
               value: svc-cr-task-dispatcher@${PROJECT_ID}.iam.gserviceaccount.com
             - name: QUEUE_BASE_URL

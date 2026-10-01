@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// Initialize complete GCP infrastructure layer
-	infra, err := gcp.NewPlatform(ctx, appCfg.Environment, appCfg.ProjectID, appCfg.BaseURL, appCfg.ServiceAccountEmail)
+	infra, err := gcp.NewPlatform(ctx, appCfg.Environment, appCfg.ProjectID, appCfg.FirestoreDB, appCfg.BaseURL, appCfg.ServiceAccountEmail)
 	if err != nil {
 		logger.Fatal("Critical platform initialization failure", "ERROR", err)
 	}

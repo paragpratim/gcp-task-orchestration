@@ -18,9 +18,9 @@ type Platform struct {
 }
 
 // NewPlatform initializes and returns a new Platform instance with the provided configuration.
-func NewPlatform(ctx context.Context, env, projectID, baseURL, saEmail string) (*Platform, error) {
+func NewPlatform(ctx context.Context, env, projectID, firestoreDB, baseURL, saEmail string) (*Platform, error) {
 	// Initialize Firestore repository
-	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID)
+	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID, firestoreDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed firestore intake: %w", err)
 	}
