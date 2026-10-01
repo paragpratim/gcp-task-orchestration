@@ -20,6 +20,15 @@ spec:
       containers:
       - name: task-orchestration-backend
         image: ${ARTIFACT_REGISTRY}/task-orchestration-app:latest
+        env:
+        - name: APP_ENV
+          value: ${APP_ENV}
+        - name: GCP_PROJECT_ID
+          value: ${PROJECT_ID}
+        - name: QUEUE_SERVICE_ACCOUNT
+          value: svc-cr-task-dispatcher@${PROJECT_ID}.iam.gserviceaccount.com
+        - name: QUEUE_BASE_URL
+          value: ${QUEUE_BASE_URL}
         resources:
           limits:
             cpu: "1000m"
