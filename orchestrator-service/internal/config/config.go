@@ -37,7 +37,7 @@ func LoadConfig() *AppConfig {
 		ProjectID:           getEnv("GCP_PROJECT_ID", "local-project"),
 		Region:              getEnv("GCP_REGION", "europe-west1"),
 		FirestoreDB:         getEnv("FIRESTORE_DB", "(default)"),
-		BaseURL:             getEnv("QUEUE_BASE_URL", "localhost:8080"),
+		BaseURL:             getEnv("QUEUE_BASE_URL", "http://orchestrator:8080"),
 		ServiceAccountEmail: getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),
 		JobsCollection:      fmt.Sprintf("%s_intake_jobs", env),
 		JobStatusCollection: fmt.Sprintf("%s_intake_job_status", env),
