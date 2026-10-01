@@ -11,6 +11,8 @@ services:
       gcloud components install beta cloud-firestore-emulator --quiet && 
       gcloud emulators firestore start --host-port=0.0.0.0:8081
       "
+    networks:
+      - task-orchestration-app-net
 
   cloud-tasks-emulator:
     image: ghcr.io/aertje/cloud-tasks-emulator:latest
@@ -18,9 +20,18 @@ services:
       - "8123:8123"
     # Create the internal queue matching your service configuration on boot
     command:
-      - host=0.0.0.0
-      - port=8123
-      - INITIAL_QUEUES=projects/local-project/locations/europe-west1/queues/orchestrator-intake-queue-local,projects/local-project/locations/europe-west1/queues/orchestrator-gcs-queue-local,projects/local-project/locations/europe-west1/queues/orchestrator-bq-queue-local
+      - -host
+      - 0.0.0.0
+      - -port
+      - "8123"
+      - -initial-queue
+      - "projects/local-project/locations/europe-west1/queues/orchestrator-intake-queue-local"
+      - -initial-queue
+      - "projects/local-project/locations/europe-west1/queues/orchestrator-gcs-queue-local"
+      - -initial-queue
+      - "projects/local-project/locations/europe-west1/queues/orchestrator-bq-queue-local"
+    networks:
+      - task-orchestration-app-net
 
   orchestrator:
     build:
@@ -34,6 +45,8 @@ services:
     depends_on:
       - firestore-emulator
       - cloud-tasks-emulator
+    networks:
+      - task-orchestration-app-net
 
   orchestrator-ui:
     build:
@@ -50,3 +63,9 @@ services:
     depends_on:
       - orchestrator
     restart: unless-stopped
+    networks:
+      - task-orchestration-app-net
+
+networks:
+  task-orchestration-app-net:
+    driver: bridge
