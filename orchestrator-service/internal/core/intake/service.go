@@ -82,6 +82,15 @@ func (s *Service) GetAllIntakeJobs(ctx *gin.Context) (*[]models.IntakeJobDefinit
 	return allJobs, nil
 }
 
+// GetAllJobStatuses retrieves all intake job statuses from the repository.
+func (s *Service) GetAllJobStatuses(ctx *gin.Context) (*[]models.JobStatus, error) {
+	allJobStatuses, err := s.statusRepo.GetAll(ctx, s.cfg.StatusCollection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve all intake job statuses: %w", err)
+	}
+	return allJobStatuses, nil
+}
+
 // UpdateIntakeJob validates and updates an existing intake job definition.
 func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
 	if err := jobDefinition.Source.Validate(); err != nil {

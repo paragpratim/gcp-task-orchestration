@@ -34,3 +34,19 @@ services:
     depends_on:
       - firestore-emulator
       - cloud-tasks-emulator
+
+  orchestrator-ui:
+    build:
+      context: ./orchestrator-ui
+      dockerfile: Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sed -i 's#127.0.0.1:8080#orchestrator:8080#g' /etc/nginx/nginx.conf
+        nginx -g 'daemon off;'
+    ports:
+      - "3000:80"
+    depends_on:
+      - orchestrator
+    restart: unless-stopped

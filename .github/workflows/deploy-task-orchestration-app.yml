@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'orchestrator-service/**'
+      - 'orchestrator-ui/**'
+      - 'cloud-run.yml'
       - '.github/workflows/deploy-task-orchestration-app.yml'
   workflow_dispatch:
     inputs:
@@ -64,7 +66,14 @@ jobs:
           cache: true
           cache-dependency-path: orchestrator-service/go.sum
 
-      - name: Install dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: orchestrator-ui/package-lock.json
+      
+      - name: Install backend dependencies
         run: go mod download
         working-directory: orchestrator-service
 
@@ -75,9 +84,15 @@ jobs:
           working-directory: orchestrator-service
           args: --timeout=5m
 
-      - name: Build
+      - name: Build go backend
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
         working-directory: orchestrator-service
+
+      - name: Build React frontend
+        run: |
+          cd orchestrator-ui
+          npm ci
+          npm run build
 
       - name: Test
         run: go test -v ./...
@@ -85,6 +100,16 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and push UI image
+        env:
+          IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+        run: |
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest \
+                       ./orchestrator-ui
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest
 
       - name: Build and push backend image
         env:
@@ -102,23 +127,19 @@ jobs:
           APP_ENV: dev
           GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
-        working-directory: orchestrator-service
         run: |
-          # Create a copy of the YAML file
           cp cloud-run.yml cloud-run-deploy.yml
 
-          # Substitute environment variables
           envsubst < cloud-run-deploy.yml > cloud-run-final.yml
           mv cloud-run-final.yml cloud-run-deploy.yml
 
-          # Update image tags
+          sed -i "s|task-orchestration-ui:latest|task-orchestration-ui:${{ env.IMAGE_TAG }}|g" cloud-run-deploy.yml
           sed -i "s|task-orchestration-app:latest|task-orchestration-app:${{ env.IMAGE_TAG }}|g" cloud-run-deploy.yml
 
           echo "Updated YAML file:"
           cat cloud-run-deploy.yml
 
       - name: Deploy to Cloud Run
-        working-directory: orchestrator-service
         run: |
           gcloud run services replace cloud-run-deploy.yml --region=${{ env.REGION }}
 
@@ -171,7 +192,7 @@ jobs:
           echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
-          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> $GITHUB_STEP_SUMMARY
+          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> **Note:** These URLs are protected by Google Cloud IAP and require authentication." >> $GITHUB_STEP_SUMMARY
 

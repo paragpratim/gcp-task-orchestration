@@ -491,6 +491,38 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/intake/jobs/status": {
+            "get": {
+                "description": "Retrieves the status of all intake jobs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "intake"
+                ],
+                "summary": "Get Intake Job Statuses",
+                "responses": {
+                    "200": {
+                        "description": "Job Statuses Retrieved",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/orchestrator_internal_models.JobStatus"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -523,6 +555,39 @@ const docTemplate = `{
                 "FileTypeIceberg"
             ]
         },
+        "orchestrator_internal_models.ExecutionStatus": {
+            "type": "string",
+            "enum": [
+                "QUEUED",
+                "COMPLETED_SKIPPED",
+                "SUCCESS",
+                "PROCESSING_GCS",
+                "MOVING_GCS",
+                "COMPLETED_GCS",
+                "FAILED_GCS",
+                "PROCESSING_BIGQUERY",
+                "COMPLETED_BIGQUERY",
+                "FAILED_BIGQUERY",
+                "PROCESSING_DATAFLOW",
+                "COMPLETED_DATAFLOW",
+                "FAILED_DATAFLOW"
+            ],
+            "x-enum-varnames": [
+                "StatusQueued",
+                "StatusSkipped",
+                "StatusSuccess",
+                "StatusProcessingGCS",
+                "StatusMovingGCS",
+                "StatusCompletedGCS",
+                "StatusFailedGCS",
+                "StatusProcessingBigQuery",
+                "StatusCompletedBigQuery",
+                "StatusFailedBQ",
+                "StatusProcessingDataflow",
+                "StatusCompletedDataflow",
+                "StatusFailedDataflow"
+            ]
+        },
         "orchestrator_internal_models.IntakeJobDefinition": {
             "type": "object",
             "properties": {
@@ -547,6 +612,32 @@ const docTemplate = `{
                 },
                 "target": {
                     "$ref": "#/definitions/orchestrator_internal_models.TargetDefinition"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "orchestrator_internal_models.JobStatus": {
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "status": {
+                    "description": "Holds the ExecutionStatus string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/orchestrator_internal_models.ExecutionStatus"
+                        }
+                    ]
                 },
                 "updated_at": {
                     "type": "string"

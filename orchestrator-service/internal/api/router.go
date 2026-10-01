@@ -23,7 +23,25 @@ import (
 func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	// Add CORS middleware to handle cross-origin requests
+	router.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Vary", "Origin")
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
+	// Initialize feature handlers with their respective services and configurations
 	initHandler := intake.NewHandler(intake.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, intake.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
