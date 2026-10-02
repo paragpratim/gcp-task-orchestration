@@ -89,6 +89,7 @@ func (c *CloudTasksRepository) Put(ctx context.Context, queueName string, method
 				AuthorizationHeader: &taskspb.HttpRequest_OidcToken{
 					OidcToken: &taskspb.OidcToken{
 						ServiceAccountEmail: c.serviceAccountEmail,
+						Audience:            c.baseURL,
 					},
 				},
 			},
