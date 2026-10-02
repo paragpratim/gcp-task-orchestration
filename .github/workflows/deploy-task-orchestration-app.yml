@@ -222,7 +222,7 @@ jobs:
           echo "✅ **Trigger:** \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Branch/Ref:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
           echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> $GITHUB_STEP_SUMMARY

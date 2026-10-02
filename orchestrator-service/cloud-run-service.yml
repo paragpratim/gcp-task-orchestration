@@ -19,7 +19,7 @@ spec:
       timeoutSeconds: 300
       containers:
         - name: task-orchestration-backend
-          image: ${ARTIFACT_REGISTRY}/task-orchestration-app:latest
+          image: ${ARTIFACT_REGISTRY}/task-orchestration-api:latest
           env:
             - name: APP_ENV
               value: ${APP_ENV}
