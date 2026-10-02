@@ -7,7 +7,6 @@ on:
     paths:
       - 'orchestrator-service/**'
       - 'orchestrator-ui/**'
-      - 'cloud-run.yml'
       - '.github/workflows/deploy-task-orchestration-app.yml'
   workflow_dispatch:
     inputs:
@@ -125,13 +124,13 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
         run: |
-          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }} \
-                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest \
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest \
                        ./orchestrator-service
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:${{ env.IMAGE_TAG }}
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-app:latest
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest
 
-      - name: Update Cloud Run service YAML with environment variables and image tags
+      - name: Update Cloud Run service YAML [orchestrator-service] with environment variables and image tags
         env:
           IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
           APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
@@ -141,25 +140,53 @@ jobs:
           QUEUE_BASE_URL: "" # Add this if using Private DNS
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |
-          cp cloud-run.yml cloud-run-deploy.yml
+          cp orchestrator-service/cloud-run-service.yml cloud-run-service-deploy.yml
 
-          envsubst < cloud-run-deploy.yml > cloud-run-final.yml
-          mv cloud-run-final.yml cloud-run-deploy.yml
+          envsubst < cloud-run-service-deploy.yml > cloud-run-service-final.yml
+          mv cloud-run-service-final.yml cloud-run-service-deploy.yml
 
-          sed -i "s|task-orchestration-ui:latest|task-orchestration-ui:${{ env.IMAGE_TAG }}|g" cloud-run-deploy.yml
-          sed -i "s|task-orchestration-app:latest|task-orchestration-app:${{ env.IMAGE_TAG }}|g" cloud-run-deploy.yml
+          sed -i "s|task-orchestration-api:latest|task-orchestration-api:${{ env.IMAGE_TAG }}|g" cloud-run-service-deploy.yml
 
           echo "Updated YAML file:"
-          cat cloud-run-deploy.yml
+          cat cloud-run-service-deploy.yml
 
-      - name: Deploy to Cloud Run
+      - name: Deploy Backend to Cloud Run
         run: |
-          gcloud run services replace cloud-run-deploy.yml --region=${{ env.REGION }}
+          gcloud run services replace cloud-run-service-deploy.yml --region=${{ env.REGION }}
 
-      - name: Configure Cloud Run for IAP
+      - name: Get Backend service URL
+        id: get-backend-url
         run: |
-          echo "Enabling IAP for task-orchestration-app..."
-          gcloud beta run services update task-orchestration-app \
+          BACKEND_SERVICE_URL=$(gcloud run services describe task-orchestration-api --region=${{ env.REGION }} --format="value(status.url)")
+          echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
+      
+      - name: Update Cloud Run service YAML [orchestrator-ui] with environment variables and image tags
+        env:
+          IMAGE_TAG: ${{ steps.set-tag.outputs.IMAGE_TAG }}
+          APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
+          GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
+          REGION: ${{ env.REGION }}
+          BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_SERVICE_URL }}
+        run: |
+          cp orchestrator-ui/cloud-run-ui.yml cloud-run-ui-deploy.yml
+
+          envsubst < cloud-run-ui-deploy.yml > cloud-run-ui-final.yml
+          mv cloud-run-ui-final.yml cloud-run-ui-deploy.yml
+
+          sed -i "s|task-orchestration-ui:latest|task-orchestration-ui:${{ env.IMAGE_TAG }}|g" cloud-run-ui-deploy.yml
+
+          echo "Updated YAML file:"
+          cat cloud-run-ui-deploy.yml
+
+      - name: Deploy UI to Cloud Run
+        run: |
+          gcloud run services replace cloud-run-ui-deploy.yml --region=${{ env.REGION }}
+
+      - name: Configure Cloud Run [orchestrator-ui] for IAP
+        run: |
+          echo "Enabling IAP for task-orchestration-ui..."
+          gcloud beta run services update task-orchestration-ui \
           --region=${{ env.REGION }} \
           --iap
 
@@ -167,7 +194,7 @@ jobs:
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
 
           echo "Grant invoker permission to the IAP service agent..."
-          gcloud run services add-iam-policy-binding task-orchestration-app \
+          gcloud run services add-iam-policy-binding task-orchestration-ui \
             --region=${{ env.REGION }} \
             --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
@@ -175,7 +202,7 @@ jobs:
       - name: Grant task dispatcher service account Cloud Run invoker access
         run: |
           echo "Granting Cloud Run invoker permission to the task dispatcher service account..."
-          gcloud run services add-iam-policy-binding task-orchestration-app \
+          gcloud run services add-iam-policy-binding task-orchestration-api \
             --region=${{ env.REGION }} \
             --member="serviceAccount:svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
@@ -183,7 +210,7 @@ jobs:
       - name: Get service URL
         id: get-url
         run: |
-          SERVICE_URL=$(gcloud run services describe task-orchestration-app --region=${{ env.REGION }} --format="value(status.url)")
+          SERVICE_URL=$(gcloud run services describe task-orchestration-ui --region=${{ env.REGION }} --format="value(status.url)")
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
           echo "🚀 Service deployed at: $SERVICE_URL"
 
