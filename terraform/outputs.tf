@@ -42,21 +42,7 @@ output "task_queue_names" {
   description = "The Cloud Tasks queue names created by the orchestrator module"
   value       = module.gcp_task_orchestration.task_queue_names
 }
-output "iap_brand_name" {
-  description = "The project-level IAP brand used for the OAuth configuration."
-  value       = module.gcp_task_orchestration.iap_brand_name
-}
 
-output "iap_oauth_client_id" {
-  description = "The OAuth client ID for the project IAP brand."
-  value       = module.gcp_task_orchestration.iap_oauth_client_id
-}
-
-output "iap_oauth_client_secret" {
-  description = "The OAuth client secret for the project IAP brand."
-  value       = module.gcp_task_orchestration.iap_oauth_client_secret
-  sensitive   = true
-}
 output "test_bucket_names" {
   description = "Names of the test GCS buckets created for validation"
   value       = values(google_storage_bucket.test_buckets)[*].name

@@ -42,19 +42,3 @@ output "task_queue_names" {
   description = "The Cloud Tasks queue names created for the orchestrator"
   value       = values(google_cloud_tasks_queue.queues)[*].name
 }
-
-output "iap_brand_name" {
-  description = "The project-level IAP brand name used for OAuth configuration."
-  value       = google_iap_brand.project_brand.name
-}
-
-output "iap_oauth_client_id" {
-  description = "The OAuth client ID created for the project IAP brand."
-  value       = google_iap_client.project_oauth_client.client_id
-}
-
-output "iap_oauth_client_secret" {
-  description = "The OAuth client secret created for the project IAP brand."
-  value       = google_iap_client.project_oauth_client.secret
-  sensitive   = true
-}
