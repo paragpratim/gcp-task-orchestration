@@ -105,7 +105,16 @@ function CreateJobDetails() {
         throw new Error(`Request failed with status ${response.status}`);
       }
 
-      setLastCreatedJob(payload);
+      const responseText = await response.text();
+      let responseBody = responseText;
+
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch (error) {
+        // Some APIs return a JSON string literal instead of a raw object.
+      }
+
+      setLastCreatedJob(responseBody);
       setSuccessMessage("Job details submitted successfully.");
       setForm(defaultForm);
     } catch (error) {
