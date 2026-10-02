@@ -96,7 +96,7 @@ func (c *CloudTasksRepository) Put(ctx context.Context, queueName string, method
 	}
 
 	if delay > 0 {
-		scheduleTime := time.Now().Add(delay)
+		scheduleTime := time.Now().UTC().Add(delay)
 		task.ScheduleTime = timestamppb.New(scheduleTime)
 	}
 
