@@ -22,3 +22,15 @@ variable "env" {
   default     = "dev"
 }
 
+variable "iap_support_email" {
+  description = "Support email used when creating the Google IAP OAuth brand for the project. Defaults to gcp-organization-admins@<my_domain> when empty."
+  type        = string
+  default     = ""
+}
+
+variable "iap_application_title" {
+  description = "Application title shown in the IAP OAuth brand UI."
+  type        = string
+  default     = "Task Orchestrator"
+}
+
