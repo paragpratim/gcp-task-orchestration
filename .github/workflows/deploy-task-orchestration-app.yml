@@ -138,6 +138,7 @@ jobs:
           GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
           REGION: ${{ env.REGION }}
           FIRESTORE_DB: orchestrator
+          QUEUE_BASE_URL: "" # Add this if using Private DNS
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           cp cloud-run.yml cloud-run-deploy.yml
@@ -154,13 +155,6 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run services replace cloud-run-deploy.yml --region=${{ env.REGION }}
-
-      - name: Set Cloud Run runtime environment variables
-        run: |
-          SERVICE_URL=$(gcloud run services describe task-orchestration-app --region=${{ env.REGION }} --format='value(status.url)')
-          gcloud run services update task-orchestration-app \
-            --region=${{ env.REGION }} \
-            --set-env-vars=QUEUE_BASE_URL="$SERVICE_URL"
 
       - name: Configure Cloud Run for IAP
         run: |

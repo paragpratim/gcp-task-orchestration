@@ -163,7 +163,7 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			jobsToQueue = append(jobsToQueue, *allJobs...)
 		}
 	}
-
+	// Iterate over the jobs to queue and handle each one
 	for _, job := range jobsToQueue {
 
 		existingJob, err := s.statusRepo.Get(ctx, s.cfg.StatusCollection, job.ID)
@@ -177,20 +177,10 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			continue // Skip submitting this job to Cloud Tasks completely
 		}
 
+		// Generate a unique task ID based on the current timestamp in milliseconds
 		taskID := fmt.Sprintf("%d", time.Now().UTC().UnixMilli())
 
-		jobStatus := models.JobStatus{
-			JobID:     job.ID,
-			Status:    models.StatusQueued,
-			UpdatedAt: time.Now().UTC(),
-			Metadata:  map[string]any{models.MetadataKeyTaskID: taskID},
-		}
-
-		_, err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
-		if err != nil {
-			return nil, fmt.Errorf("failed to persist job status for job %s: %w", job.ID, err)
-		}
-
+		// Prepare the payload for the Cloud Task, including the job ID and task ID
 		taskPayload := models.PipelineTaskPayload{
 			JobID:  job.ID,
 			TaskID: taskID,
@@ -200,9 +190,24 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 			return nil, fmt.Errorf("failed lean task network serialization for job %s: %w", job.ID, err)
 		}
 
+		// Queue the task in Cloud Tasks with the specified method, route, and payload
 		err = s.taskQueueRepo.Put(ctx, s.cfg.IntakeQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), payloadBytes, 0)
 		if err != nil {
 			return nil, fmt.Errorf("queue execution aborted at task dispatch phase for job %s: %w", job.ID, err)
+		}
+
+		// Create a new job status with the generated task ID and persist it
+		jobStatus := models.JobStatus{
+			JobID:     job.ID,
+			Status:    models.StatusQueued,
+			UpdatedAt: time.Now().UTC(),
+			Metadata:  map[string]any{models.MetadataKeyTaskID: taskID},
+		}
+
+		// Persist the job status to the status repository
+		_, err = s.statusRepo.Put(ctx, s.cfg.StatusCollection, job.ID, jobStatus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to persist job status for job %s: %w", job.ID, err)
 		}
 
 		jobStatuses = append(jobStatuses, jobStatus)
