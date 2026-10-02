@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "iceberg-gcp-tf-state-9f85"
+    bucket = "gcp-task-orchestration-tf-state-747c"
     prefix = "task-orchestration/terraform/state"
   }
 }
