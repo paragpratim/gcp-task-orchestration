@@ -1,13 +1,19 @@
 FROM node:22.15.0 AS build
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-fund --no-audit
+
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine AS run
-COPY --from=build /app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+FROM node:22.15.0 AS run
+WORKDIR /app
+
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/build ./build
+COPY server.js ./server.js
 
 EXPOSE 80
-CMD ["/bin/sh", "-c", "sed -i \"s|\\${BACKEND_URL}|$BACKEND_URL|g\" /etc/nginx/nginx.conf; nginx -g \"daemon off;\""]
+CMD ["node", "server.js"]

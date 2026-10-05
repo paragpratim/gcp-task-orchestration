@@ -121,18 +121,18 @@ jobs:
         id: get-backend-url
         run: |
           BACKEND_SERVICE_URL=$(gcloud run services describe task-orchestration-api --region=${{ env.REGION }} --format="value(status.url)")
-          BACKEND_HOST="${BACKEND_SERVICE_URL#http://}"
-          BACKEND_HOST="${BACKEND_HOST#https://}"
+          # BACKEND_HOST="${BACKEND_SERVICE_URL#http://}"
+          # BACKEND_HOST="${BACKEND_HOST#https://}"
 
-          if [[ "$BACKEND_SERVICE_URL" == https://* ]]; then
-            BACKEND_PORT=443
-          else
-            BACKEND_PORT=8080
-          fi
+          # if [[ "$BACKEND_SERVICE_URL" == https://* ]]; then
+          #   BACKEND_PORT=443
+          # else
+          #   BACKEND_PORT=8080
+          # fi
 
           echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
-          echo "BACKEND_HOST=$BACKEND_HOST" >> "$GITHUB_OUTPUT"
-          echo "BACKEND_PORT=$BACKEND_PORT" >> "$GITHUB_OUTPUT"
+          # echo "BACKEND_HOST=$BACKEND_HOST" >> "$GITHUB_OUTPUT"
+          # echo "BACKEND_PORT=$BACKEND_PORT" >> "$GITHUB_OUTPUT"
           echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
 
       - name: Update Cloud Run service YAML [orchestrator-ui] with environment variables and image tags
@@ -141,7 +141,8 @@ jobs:
           APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
           GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
           REGION: ${{ env.REGION }}
-          BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_HOST }}:${{ steps.get-backend-url.outputs.BACKEND_PORT }}
+          # BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_HOST }}:${{ steps.get-backend-url.outputs.BACKEND_PORT }}
+          BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_SERVICE_URL }}
         run: |
           cp orchestrator-ui/cloud-run-ui.yml cloud-run-ui-deploy.yml
           envsubst < cloud-run-ui-deploy.yml > cloud-run-ui-final.yml
