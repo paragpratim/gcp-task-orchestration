@@ -14,8 +14,8 @@ async function getAuthHeaders() {
     return {};
   }
 
-  const target = new URL(backendUrl).origin;
-  const client = await googleAuth.getIdTokenClient(target);
+  const targetAudience = backendUrl;
+  const client = await googleAuth.getIdTokenClient(targetAudience);
   const headers = await client.getRequestHeaders();
 
   return {

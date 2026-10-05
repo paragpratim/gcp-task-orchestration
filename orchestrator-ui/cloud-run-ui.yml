@@ -48,3 +48,4 @@ spec:
             timeoutSeconds: 3
             periodSeconds: 30
             failureThreshold: 3
+      serviceAccountName: svc-cr-task-orchestrator@${PROJECT_ID}.iam.gserviceaccount.com

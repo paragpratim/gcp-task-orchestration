@@ -25,7 +25,11 @@ A Go-based, highly efficient, and configurable Google Cloud orchestration platfo
 
 - V1 — GCS to BigQuery data ingestion workflow using Cloud Tasks, Firestore status tracking, and a monitoring UI.
 
-## Quick start
+## Local development
+
+Ensure you have Docker and Task installed locally. The local development environment uses emulators for Firestore and Cloud Tasks, allowing you to run and test the orchestrator service and UI without deploying to GCP.
+
+### Quick start
 
 ```bash
 task up
