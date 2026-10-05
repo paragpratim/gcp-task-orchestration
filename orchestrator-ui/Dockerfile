@@ -10,4 +10,4 @@ COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
-CMD ["/bin/sh", "-c", "printf '%s\n' \"window.__APP_CONFIG__ = window.__APP_CONFIG__ || {}; window.__APP_CONFIG__.BASE_URL = '$BACKEND_URL';\" > /usr/share/nginx/html/runtime-config.js; nginx -g \"daemon off;\""]
+CMD ["/bin/sh", "-c", "if [ -z \"$BACKEND_URL\" ]; then export BACKEND_URL=http://orchestrator:8080; fi; sed -i \"s|\\${BACKEND_URL}|$BACKEND_URL|g\" /etc/nginx/nginx.conf; nginx -g \"daemon off;\""]
