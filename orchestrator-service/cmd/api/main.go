@@ -29,8 +29,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if appCfg.ProjectID == "" || appCfg.BaseURL == "" || appCfg.ServiceAccountEmail == "" {
-		logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_BASE_URL, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
+	if appCfg.ProjectID == "" || appCfg.ServiceAccountEmail == "" {
+		logger.Warn("WARNING: Essential environment variables (GCP_PROJECT_ID, QUEUE_SERVICE_ACCOUNT) are missing. Infrastructure may fail to authenticate.")
 	}
 
 	// Initialize complete GCP infrastructure layer
