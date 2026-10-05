@@ -4,6 +4,7 @@ const { GoogleAuth } = require('google-auth-library');
 
 const app = express();
 const port = Number(process.env.PORT || 80);
+
 const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/\$/, '');
 const enableIamAuth = process.env.ENABLE_IAM_AUTH !== 'false';
 const buildDir = path.join(__dirname, 'build');
@@ -18,6 +19,7 @@ async function getAuthHeaders() {
   const client = await googleAuth.getIdTokenClient(targetAudience);
   const headers = await client.getRequestHeaders();
 
+  // Return a predictable, uppercase key for consistency
   return {
     Authorization: headers.Authorization || headers.authorization || '',
   };
@@ -26,10 +28,14 @@ async function getAuthHeaders() {
 async function proxyRequest(req, res) {
   const requestHeaders = { ...req.headers };
   
-  // Clean up headers required for proxying
+  // Clean up standard hop-by-hop headers required for clean proxying
   delete requestHeaders.host;
   delete requestHeaders.connection;
   delete requestHeaders['content-length'];
+
+  // Strip any incoming user authorization headers from the client.
+  delete requestHeaders.authorization;
+  delete requestHeaders.Authorization;
 
   // Correctly construct the full target URL
   const targetUrl = new URL(req.originalUrl, `${backendUrl}/`);
@@ -45,7 +51,7 @@ async function proxyRequest(req, res) {
     method: req.method,
     headers: {
       ...requestHeaders,
-      ...authHeaders,
+      ...authHeaders, // The clean Google Cloud IAM OIDC token is now securely injected alone
     },
     body: requestBody,
   });
