@@ -63,6 +63,12 @@ jobs:
           project_id: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
           region: europe-west1
 
+      - name: Build go backend binary
+        run: |
+          mkdir -p build
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
+        working-directory: orchestrator-service
+
       - name: Build and push backend image
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
