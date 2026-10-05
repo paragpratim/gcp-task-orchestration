@@ -8,8 +8,8 @@ on:
       - 'orchestrator-service/**'
       - 'orchestrator-ui/**'
       - '.github/workflows/deploy-task-orchestration-app.yml'
-      - '.github/workflows/builds/api-build-push.yml'
-      - '.github/workflows/builds/ui-build-push.yml'
+      - '.github/workflows/api-build-push.yml'
+      - '.github/workflows/ui-build-push.yml'
       - '.github/actions/setup-gcp-auth/action.yml'
   workflow_dispatch:
     inputs:
@@ -56,14 +56,14 @@ jobs:
 
   api:
     needs: prepare
-    uses: ./.github/workflows/builds/api-build-push.yml
+    uses: ./.github/workflows/api-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
     secrets: inherit
 
   ui:
     needs: prepare
-    uses: ./.github/workflows/builds/ui-build-push.yml
+    uses: ./.github/workflows/ui-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
     secrets: inherit
