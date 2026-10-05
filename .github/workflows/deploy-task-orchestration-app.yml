@@ -118,23 +118,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Set up GCP auth and Docker registry
+        uses: ./.github/actions/setup-gcp-auth
         with:
           workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
           service_account: ${{ secrets.DEPLOYMENT_SVC }}
           audience: ${{ secrets.WIF_AUDIENCE }}
           project_id: ${{ env.PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Install gcloud beta components
-        run: |
-          gcloud components install beta --quiet
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+          region: ${{ env.REGION }}
 
       - name: Build and push backend image
         env:
@@ -158,23 +149,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Set up GCP auth and Docker registry
+        uses: ./.github/actions/setup-gcp-auth
         with:
           workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
           service_account: ${{ secrets.DEPLOYMENT_SVC }}
           audience: ${{ secrets.WIF_AUDIENCE }}
           project_id: ${{ env.PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Install gcloud beta components
-        run: |
-          gcloud components install beta --quiet
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+          region: ${{ env.REGION }}
 
       - name: Build and push UI image
         env:
@@ -199,20 +181,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Set up GCP auth and Cloud SDK
+        uses: ./.github/actions/setup-gcp-auth
         with:
           workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
           service_account: ${{ secrets.DEPLOYMENT_SVC }}
           audience: ${{ secrets.WIF_AUDIENCE }}
           project_id: ${{ env.PROJECT_ID }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Install gcloud beta components
-        run: |
-          gcloud components install beta --quiet
+          region: ${{ env.REGION }}
 
       - name: Update Cloud Run service YAML [orchestrator-service] with environment variables and image tags
         env:

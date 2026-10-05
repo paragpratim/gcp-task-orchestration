@@ -1,0 +1,42 @@
+name: Setup GCP auth and Docker registry
+
+description: Authenticate to Google Cloud and configure Docker for Artifact Registry
+
+inputs:
+  workload_identity_provider:
+    description: WIF provider
+    required: true
+  service_account:
+    description: GCP service account email
+    required: true
+  audience:
+    description: OAuth audience
+    required: true
+  project_id:
+    description: GCP project ID
+    required: true
+  region:
+    description: GCP region for Artifact Registry
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+        audience: ${{ inputs.audience }}
+        project_id: ${{ inputs.project_id }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Install gcloud beta components
+      shell: bash
+      run: gcloud components install beta --quiet
+
+    - name: Configure Docker for Artifact Registry
+      shell: bash
+      run: gcloud auth configure-docker ${{ inputs.region }}-docker.pkg.dev
