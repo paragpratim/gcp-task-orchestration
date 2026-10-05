@@ -160,8 +160,9 @@ func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, r
 		// No service name detected; we are running locally or in a standard docker container
 		return "", nil
 	}
+	regionalEndpoint := fmt.Sprintf("https://%s-run.googleapis.com", region)
 	// Initialize the Cloud Run client
-	runService, err := run.NewService(ctx)
+	runService, err := run.NewService(ctx, option.WithEndpoint(regionalEndpoint))
 	if err != nil {
 		return "", fmt.Errorf("failed to initialize cloud run v1 client: %w", err)
 	}
@@ -173,7 +174,7 @@ func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, r
 		return "", fmt.Errorf("failed fetching self routing configuration via v1 control plane: %w", err)
 	}
 	// Check if the service has a valid URL
-	if svc == nil || svc.Status == nil {
+	if svc == nil || svc.Status == nil || svc.Status.Url == "" {
 		return "", fmt.Errorf("gcp v1 control plane returned an empty ingress URI for service %s", kService)
 	}
 	return svc.Status.Url, nil
