@@ -8,6 +8,9 @@ on:
       - 'orchestrator-service/**'
       - 'orchestrator-ui/**'
       - '.github/workflows/deploy-task-orchestration-app.yml'
+      - '.github/workflows/builds/api-build-push.yml'
+      - '.github/workflows/builds/ui-build-push.yml'
+      - '.github/actions/setup-gcp-auth/action.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -44,134 +47,31 @@ jobs:
         id: set-tag
         run: |
           if [ "${{ github.event.inputs.image_tag }}" != "" ]; then
-            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
             echo "Using custom image tag: ${{ github.event.inputs.image_tag }}"
           else
-            echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "IMAGE_TAG=${{ github.sha }}" >> "$GITHUB_OUTPUT"
             echo "Using git SHA as image tag: ${{ github.sha }}"
           fi
 
-  validate-api:
+  api:
     needs: prepare
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/builds/api-build-push.yml
+    with:
+      image_tag: ${{ needs.prepare.outputs.image_tag }}
+    secrets: inherit
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.0'
-          cache: true
-          cache-dependency-path: orchestrator-service/go.sum
-
-      - name: Install backend dependencies
-        run: go mod download
-        working-directory: orchestrator-service
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          working-directory: orchestrator-service
-          args: --timeout=5m
-
-      - name: Build go backend
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
-        working-directory: orchestrator-service
-
-      - name: Test
-        run: go test -v ./...
-        working-directory: orchestrator-service
-
-  validate-ui:
+  ui:
     needs: prepare
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: orchestrator-ui/package-lock.json
-
-      - name: Build React frontend
-        run: |
-          cd orchestrator-ui
-          npm ci
-          npm run build
-
-  build-and-push-api:
-    needs: [prepare, validate-api]
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up GCP auth and Docker registry
-        uses: ./.github/actions/setup-gcp-auth
-        with:
-          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: ${{ secrets.DEPLOYMENT_SVC }}
-          audience: ${{ secrets.WIF_AUDIENCE }}
-          project_id: ${{ env.PROJECT_ID }}
-          region: ${{ env.REGION }}
-
-      - name: Build and push backend image
-        env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
-        run: |
-          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }} \
-                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest \
-                       ./orchestrator-service
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest
-
-  build-and-push-ui:
-    needs: [prepare, validate-ui]
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up GCP auth and Docker registry
-        uses: ./.github/actions/setup-gcp-auth
-        with:
-          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
-          service_account: ${{ secrets.DEPLOYMENT_SVC }}
-          audience: ${{ secrets.WIF_AUDIENCE }}
-          project_id: ${{ env.PROJECT_ID }}
-          region: ${{ env.REGION }}
-
-      - name: Build and push UI image
-        env:
-          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
-        run: |
-          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }} \
-                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest \
-                       ./orchestrator-ui
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }}
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest
+    uses: ./.github/workflows/builds/ui-build-push.yml
+    with:
+      image_tag: ${{ needs.prepare.outputs.image_tag }}
+    secrets: inherit
 
   deploy:
-    needs: [prepare, build-and-push-api, build-and-push-ui]
+    needs: [prepare, api, ui]
     runs-on: ubuntu-latest
-    if: needs.build-and-push-api.result == 'success' && needs.build-and-push-ui.result == 'success'
+    if: needs.api.result == 'success' && needs.ui.result == 'success'
 
     permissions:
       contents: read
@@ -215,7 +115,7 @@ jobs:
         id: get-backend-url
         run: |
           BACKEND_SERVICE_URL=$(gcloud run services describe task-orchestration-api --region=${{ env.REGION }} --format="value(status.url)")
-          echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
           echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
 
       - name: Update Cloud Run service YAML [orchestrator-ui] with environment variables and image tags
@@ -265,23 +165,23 @@ jobs:
         id: get-url
         run: |
           SERVICE_URL=$(gcloud run services describe task-orchestration-ui --region=${{ env.REGION }} --format="value(status.url)")
-          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "SERVICE_URL=$SERVICE_URL" >> "$GITHUB_OUTPUT"
           echo "🚀 Service deployed at: $SERVICE_URL"
 
       - name: Output deployment info
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
         run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Trigger:** \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Branch/Ref:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
-          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> **Note:** These URLs are protected by Google Cloud IAP and require authentication." >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Trigger:** \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Branch/Ref:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🌐 Application URLs" >> "$GITHUB_STEP_SUMMARY"
+          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> **Note:** These URLs are protected by Google Cloud IAP and require authentication." >> "$GITHUB_STEP_SUMMARY"
 
     outputs:
       service_url: ${{ steps.get-url.outputs.SERVICE_URL }}

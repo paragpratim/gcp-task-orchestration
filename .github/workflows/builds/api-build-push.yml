@@ -1,0 +1,75 @@
+name: API build and push
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Docker image tag to build and push
+        required: true
+        type: string
+
+jobs:
+  validate-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: true
+          cache-dependency-path: orchestrator-service/go.sum
+
+      - name: Install backend dependencies
+        run: go mod download
+        working-directory: orchestrator-service
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          working-directory: orchestrator-service
+          args: --timeout=5m
+
+      - name: Build go backend
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
+        working-directory: orchestrator-service
+
+      - name: Test
+        run: go test -v ./...
+        working-directory: orchestrator-service
+
+  build-and-push-api:
+    needs: validate-api
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up GCP auth and Docker registry
+        uses: ./.github/actions/setup-gcp-auth
+        with:
+          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
+          region: europe-west1
+
+      - name: Build and push backend image
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
+        run: |
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest \
+                       ./orchestrator-service
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:latest
