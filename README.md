@@ -17,7 +17,7 @@ A Go-based, highly efficient, and configurable Google Cloud orchestration platfo
 
 ## Architecture
 
-![Architecture Diagram](docs/architecture.png)
+![Architecture Diagram](architecture/infrastructure.png)
 
 ## Features
 
