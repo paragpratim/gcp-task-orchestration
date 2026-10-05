@@ -1,6 +1,6 @@
 # GCP Task Orchestration
 
-A compact Google Cloud workflow for creating, queueing, and monitoring background jobs across GCS, BigQuery, and Dataflow.
+A Go-based, highly efficient, and configurable Google Cloud orchestration platform for performing and orchestrating various tasks across GCP services.
 
 [![Go CI](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/go-ci.yml/badge.svg?branch=main)](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/go-ci.yml)
 
