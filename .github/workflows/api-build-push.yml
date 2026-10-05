@@ -34,10 +34,6 @@ jobs:
           working-directory: orchestrator-service
           args: --timeout=5m
 
-      - name: Build go backend
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o build/orchestrator-service ./cmd/api
-        working-directory: orchestrator-service
-
       - name: Test
         run: go test -v ./...
         working-directory: orchestrator-service
