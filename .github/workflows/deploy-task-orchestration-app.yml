@@ -56,6 +56,9 @@ jobs:
 
   api:
     needs: prepare
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/api-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
@@ -63,6 +66,9 @@ jobs:
 
   ui:
     needs: prepare
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/ui-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
