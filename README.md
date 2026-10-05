@@ -2,6 +2,12 @@
 
 A compact Google Cloud workflow for creating, queueing, and monitoring background jobs across GCS, BigQuery, and Dataflow.
 
+[![Go CI](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/go-ci.yml/badge.svg?branch=main)](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/go-ci.yml)
+
+[![Deploy Terraform Infrastructure](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/deploy-terraform.yml/badge.svg?branch=main)](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/deploy-terraform.yml)
+
+[![Deploy Task Orchestration Service to Cloud Run](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/deploy-task-orchestration-app.yml/badge.svg)](https://github.com/paragpratim/gcp-task-orchestration/actions/workflows/deploy-task-orchestration-app.yml)
+
 ## What this repo contains
 
 - `orchestrator-service/` — Go REST API that accepts job requests, writes status to Firestore, and enqueues Cloud Tasks work.
@@ -12,6 +18,12 @@ A compact Google Cloud workflow for creating, queueing, and monitoring backgroun
 ## Architecture
 
 ![Architecture Diagram](docs/architecture.png)
+
+## Features
+
+### Versions
+
+- V1 — GCS to BigQuery data ingestion workflow using Cloud Tasks, Firestore status tracking, and a monitoring UI.
 
 ## Quick start
 
