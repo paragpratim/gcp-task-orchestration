@@ -9,7 +9,7 @@ import (
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"google.golang.org/api/option"
-	"google.golang.org/api/run/v2"
+	"google.golang.org/api/run/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -121,6 +121,35 @@ func (c *CloudTasksRepository) Close() error {
 
 // ResolveCloudRunURL resolves the base URL for a Cloud Run service. If BaseURL is provided, it returns that.
 // Otherwise, it attempts to resolve the URL from Cloud Run service metadata.
+//
+//	func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, region string) (string, error) {
+//		if BaseURL != "" {
+//			return BaseURL, nil
+//		}
+//		// If BaseURL is not provided, attempt to resolve the URL from Cloud Run service metadata
+//		kService := os.Getenv("K_SERVICE")
+//		if kService == "" {
+//			// No service name detected; we are running locally or in a standard docker container
+//			return "", nil
+//		}
+//		// Initialize the Cloud Run client
+//		runService, err := run.NewService(ctx)
+//		if err != nil {
+//			return "", fmt.Errorf("failed to initialize cloud run v2 client: %w", err)
+//		}
+//		// Construct the resource name for the Cloud Run service
+//		resourceName := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, kService)
+//		// Fetch the Cloud Run service details
+//		svc, err := runService.Projects.Locations.Services.Get(resourceName).Context(ctx).Do()
+//		if err != nil {
+//			return "", fmt.Errorf("failed fetching self routing configuration via v2 control plane: %w", err)
+//		}
+//		// Check if the service has a valid URL
+//		if svc == nil || svc.Uri == "" {
+//			return "", fmt.Errorf("gcp v2 control plane returned an empty ingress URI for service %s", kService)
+//		}
+//		return svc.Uri, nil
+//	}
 func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, region string) (string, error) {
 	if BaseURL != "" {
 		return BaseURL, nil
@@ -134,18 +163,18 @@ func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, r
 	// Initialize the Cloud Run client
 	runService, err := run.NewService(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to initialize cloud run v2 client: %w", err)
+		return "", fmt.Errorf("failed to initialize cloud run v1 client: %w", err)
 	}
 	// Construct the resource name for the Cloud Run service
-	resourceName := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, kService)
+	resourceName := fmt.Sprintf("namespaces/%s/services/%s", projectID, kService)
 	// Fetch the Cloud Run service details
-	svc, err := runService.Projects.Locations.Services.Get(resourceName).Context(ctx).Do()
+	svc, err := runService.Namespaces.Services.Get(resourceName).Context(ctx).Do()
 	if err != nil {
-		return "", fmt.Errorf("failed fetching self routing configuration via v2 control plane: %w", err)
+		return "", fmt.Errorf("failed fetching self routing configuration via v1 control plane: %w", err)
 	}
 	// Check if the service has a valid URL
-	if svc == nil || svc.Uri == "" {
-		return "", fmt.Errorf("gcp v2 control plane returned an empty ingress URI for service %s", kService)
+	if svc == nil || svc.Status == nil {
+		return "", fmt.Errorf("gcp v1 control plane returned an empty ingress URI for service %s", kService)
 	}
-	return svc.Uri, nil
+	return svc.Status.Url, nil
 }
