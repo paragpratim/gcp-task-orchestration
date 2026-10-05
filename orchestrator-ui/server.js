@@ -4,7 +4,7 @@ const { GoogleAuth } = require('google-auth-library');
 
 const app = express();
 const port = Number(process.env.PORT || 80);
-const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/$/, '');
+const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/\$/, '');
 const enableIamAuth = process.env.ENABLE_IAM_AUTH !== 'false';
 const buildDir = path.join(__dirname, 'build');
 const googleAuth = new GoogleAuth();
@@ -25,13 +25,21 @@ async function getAuthHeaders() {
 
 async function proxyRequest(req, res) {
   const requestHeaders = { ...req.headers };
+  
+  // Clean up headers required for proxying
   delete requestHeaders.host;
   delete requestHeaders.connection;
   delete requestHeaders['content-length'];
 
+  // Correctly construct the full target URL
   const targetUrl = new URL(req.originalUrl, `${backendUrl}/`);
   const authHeaders = await getAuthHeaders();
-  const requestBody = ['GET', 'HEAD'].includes(req.method) ? undefined : req.body;
+
+  // Handle body payload correctly for native fetch
+  let requestBody = undefined;
+  if (!['GET', 'HEAD'].includes(req.method) && Buffer.isBuffer(req.body) && req.body.length > 0) {
+    requestBody = req.body;
+  }
 
   const upstreamResponse = await fetch(targetUrl, {
     method: req.method,
@@ -42,27 +50,31 @@ async function proxyRequest(req, res) {
     body: requestBody,
   });
 
+  // Forward response headers (ignoring hop-by-hop headers)
   for (const [headerName, headerValue] of upstreamResponse.headers.entries()) {
     if (['content-length', 'transfer-encoding', 'connection'].includes(headerName.toLowerCase())) {
       continue;
     }
-
     res.setHeader(headerName, headerValue);
   }
 
-  const responseBuffer = Buffer.from(await upstreamResponse.arrayBuffer());
   res.status(upstreamResponse.status);
+
+  // Read response stream safely into an ArrayBuffer -> Buffer
+  const arrayBuffer = await upstreamResponse.arrayBuffer();
+  const responseBuffer = Buffer.from(arrayBuffer);
 
   if (responseBuffer.length > 0) {
     res.send(responseBuffer);
-    return;
+  } else {
+    res.end();
   }
-
-  res.end();
 }
 
-app.use('/api', express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
-  req.body = req.body;
+// Global Body Parsing for API & Swagger routes to safely capture raw bodies up to 50mb
+app.use(['/api', '/swagger'], express.raw({ type: '*/*', limit: '50mb' }));
+
+app.all('/api*', async (req, res) => {
   try {
     await proxyRequest(req, res);
   } catch (error) {
@@ -71,7 +83,7 @@ app.use('/api', express.raw({ type: '*/*', limit: '50mb' }), async (req, res) =>
   }
 });
 
-app.use('/swagger', express.raw({ type: '*/*', limit: '50mb' }), async (req, res) => {
+app.all('/swagger*', async (req, res) => {
   try {
     await proxyRequest(req, res);
   } catch (error) {
@@ -84,14 +96,15 @@ app.get('/health', (_req, res) => {
   res.status(200).send('ok');
 });
 
+// Serve static assets
 app.use(express.static(buildDir, { index: false }));
 
+// SPA fallback routing
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/swagger') || req.path === '/health') {
     next();
     return;
   }
-
   res.sendFile(path.join(buildDir, 'index.html'));
 });
 
