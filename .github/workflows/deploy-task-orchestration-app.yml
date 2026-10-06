@@ -54,7 +54,8 @@ jobs:
           echo "REGION=${{ env.REGION }}" >> "$GITHUB_OUTPUT"
           echo "API_SERVICE_NAME=${{ env.API_SERVICE_NAME }}" >> "$GITHUB_OUTPUT"
           echo "UI_SERVICE_NAME=${{ env.UI_SERVICE_NAME }}" >> "$GITHUB_OUTPUT"
-          echo "ARTIFACT_REGISTRY=${{ env.REGION }}-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator" >> "$GITHUB_OUTPUT"
+          # echo "ARTIFACT_REGISTRY=${{ env.REGION }}-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator" >> "$GITHUB_OUTPUT"
+          echo "ARTIFACT_REGISTRY=${{ env.REGION }}-docker.pkg.dev/------/task-orchestrator" >> "$GITHUB_OUTPUT"
 
       - name: Set image tag
         id: set-tag
