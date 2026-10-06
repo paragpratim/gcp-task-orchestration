@@ -3,14 +3,11 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"os"
-	"sync"
 	"time"
 
 	cloudtasks "cloud.google.com/go/cloudtasks/apiv2"
 	taskspb "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb"
 	"google.golang.org/api/option"
-	"google.golang.org/api/run/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,7 +25,6 @@ type CloudTasksRepository struct {
 	projectID           string
 	region              string
 	baseURL             string
-	baseURLMu           sync.Mutex
 	serviceAccountEmail string
 }
 
@@ -70,10 +66,6 @@ func NewCloudTasksRepository(ctx context.Context, env string, projectID string, 
 
 // Put enqueues a task into the specified Cloud Tasks queue with an optional delay.
 func (c *CloudTasksRepository) Put(ctx context.Context, queueName string, method taskspb.HttpMethod, path string, payload []byte, delay time.Duration) error {
-	if err := c.ensureBaseURL(ctx); err != nil {
-		return fmt.Errorf("failed to ensure base URL: %w", err)
-	}
-
 	fullURL := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	task := &taskspb.Task{
@@ -116,53 +108,4 @@ func (c *CloudTasksRepository) Put(ctx context.Context, queueName string, method
 // Close explicitly releases connections in the Cloud Tasks client transport layers.
 func (c *CloudTasksRepository) Close() error {
 	return c.tasksClient.Close()
-}
-
-// ensureBaseURL ensures that the base URL for the Cloud Run service is set. If it's not already set, it attempts to resolve it.
-func (c *CloudTasksRepository) ensureBaseURL(ctx context.Context) error {
-	c.baseURLMu.Lock()
-	defer c.baseURLMu.Unlock()
-
-	if c.baseURL != "" {
-		return nil
-	}
-
-	resolvedBaseURL, err := ResolveCloudRunURL(ctx, "", c.projectID, c.region)
-	if err != nil {
-		return fmt.Errorf("failed to resolve cloud run URL: %w", err)
-	}
-
-	c.baseURL = resolvedBaseURL
-	return nil
-}
-
-// ResolveCloudRunURL resolves the base URL for a Cloud Run service. If BaseURL is provided, it returns that.
-// Otherwise, it attempts to resolve the URL from Cloud Run service metadata.
-func ResolveCloudRunURL(ctx context.Context, BaseURL string, projectID string, region string) (string, error) {
-	if BaseURL != "" {
-		return BaseURL, nil
-	}
-	// If BaseURL is not provided, attempt to resolve the URL from Cloud Run service metadata
-	kService := os.Getenv("K_SERVICE")
-	if kService == "" {
-		// No service name detected; we are running locally or in a standard docker container
-		return "", nil
-	}
-	// Initialize the Cloud Run client
-	runService, err := run.NewService(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to initialize cloud run v2 client: %w", err)
-	}
-	// Construct the resource name for the Cloud Run service
-	resourceName := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, kService)
-	// Fetch the Cloud Run service details
-	svc, err := runService.Projects.Locations.Services.Get(resourceName).Context(ctx).Do()
-	if err != nil {
-		return "", fmt.Errorf("failed fetching self routing configuration via v2 control plane: %w", err)
-	}
-	// Check if the service has a valid URL
-	if svc == nil || svc.Uri == "" {
-		return "", fmt.Errorf("gcp v2 control plane returned an empty ingress URI for service %s", kService)
-	}
-	return svc.Uri, nil
 }
