@@ -64,6 +64,9 @@ jobs:
     uses: ./.github/workflows/api-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
+      region: ${{ vars.REGION }}
+      api_service_name: ${{ vars.API_SERVICE_NAME }}
+      artifact_registry: ${{ vars.ARTIFACT_REGISTRY }}
     secrets: inherit
 
   ui:
@@ -74,6 +77,10 @@ jobs:
     uses: ./.github/workflows/ui-build-push.yml
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
+      region: ${{ vars.REGION }}
+      ui_service_name: ${{ vars.UI_SERVICE_NAME }}
+      artifact_registry: ${{ vars.ARTIFACT_REGISTRY }}
+      
     secrets: inherit
 
   deploy:
