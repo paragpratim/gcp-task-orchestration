@@ -33,7 +33,8 @@ resource "google_project_iam_member" "orchestrator_service_account_roles" {
     "roles/iam.serviceAccountTokenCreator",
     "roles/datastore.user",
     "roles/iap.httpsResourceAccessor",
-    "roles/run.admin"
+    "roles/run.admin",
+    "roles/run.invoker"
   ])
 
   project    = var.project_id
