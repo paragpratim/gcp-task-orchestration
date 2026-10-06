@@ -90,6 +90,9 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.api.result == 'success' && needs.ui.result == 'success'
 
+    env:
+      ARTIFACT_REGISTRY: ${{ needs.prepare.outputs.region }}-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/${{ needs.prepare.outputs.artifact_registry }}
+
     permissions:
       contents: read
       id-token: write
