@@ -176,14 +176,6 @@ jobs:
             --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
 
-      - name: Grant task dispatcher service account Cloud Run invoker access
-        run: |
-          echo "Granting Cloud Run invoker permission to the task dispatcher service account..."
-          gcloud run services add-iam-policy-binding ${{ env.API_SERVICE_NAME }} \
-            --region=${{ env.REGION }} \
-            --member="serviceAccount:svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --role="roles/run.invoker"
-
       - name: Output deployment info
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
