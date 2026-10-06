@@ -49,7 +49,7 @@ resource "google_project_iam_member" "dispatcher_service_account_roles" {
 
 resource "google_service_account_iam_member" "orchestrator_can_impersonate_dispatcher" {
   for_each = toset([
-    # "roles/iam.serviceAccountUser",
+    "roles/iam.serviceAccountUser",
     # "roles/iam.serviceAccountTokenCreator",
   ])
 
