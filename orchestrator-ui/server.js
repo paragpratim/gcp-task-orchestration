@@ -28,12 +28,12 @@ async function getAuthHeaders() {
     targetAudience = backendUrl.trim();
   }
 
-  console.log('[UI auth debug] Fetching explicit OIDC token for audience:', targetAudience);
+  console.log('[UI auth debug] Fetching OIDC token for audience:', targetAudience);
 
+  // 1. First Attempt: Safely try to query the native Cloud Run metadata server directly
   try {
-    // 1. First, attempt to query the native Cloud Run metadata server directly.
-    // This bypasses local file caches and environment pollution entirely.
-    const metadataUrl = `http://google.internal{encodeURIComponent(targetAudience)}`;
+    // FIXED: Using the absolute Google Cloud Metadata engine path with proper variable injection (\$)
+    const metadataUrl = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(targetAudience)}`;
     
     const metadataResponse = await fetch(metadataUrl, {
       headers: { 'Metadata-Flavor': 'Google' }
@@ -48,8 +48,12 @@ async function getAuthHeaders() {
     }
     
     console.warn(`[UI auth debug] Direct metadata endpoint returned status ${metadataResponse.status}. Falling back to library.`);
+  } catch (metadataError) {
+    console.warn('[UI auth debug] Direct metadata server fetch failed, proceeding with library fallback. Error:', metadataError.message);
+  }
 
-    // 2. Structural Fallback: If metadata server isn't responsive, use the library's direct provider
+  // 2. Fallback: Use the library's direct token provider if the direct fetch failed
+  try {
     const client = await googleAuth.getIdTokenClient(targetAudience);
     let fallbackToken;
     
