@@ -120,7 +120,8 @@ jobs:
       - name: Get Backend service URL
         id: get-backend-url
         run: |
-          BACKEND_SERVICE_URL=$(gcloud run services describe task-orchestration-api --region=${{ env.REGION }} --format="value(status.addresses[0].url)")
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
+          BACKEND_SERVICE_URL="https://task-orchestration-api-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
 
           echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
           echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
@@ -169,10 +170,12 @@ jobs:
             --member="serviceAccount:svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
 
-      - name: Get service URL
+      - name: Get UI service URL
         id: get-url
         run: |
-          SERVICE_URL=$(gcloud run services describe task-orchestration-ui --region=${{ env.REGION }} --format="value(status.url)")
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
+          SERVICE_URL="https:/task-orchestration-ui-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
+
           echo "SERVICE_URL=$SERVICE_URL" >> "$GITHUB_OUTPUT"
           echo "🚀 Service deployed at: $SERVICE_URL"
 
