@@ -17,37 +17,61 @@ async function getAuthHeaders() {
     return {};
   }
 
-  const targetAudience = backendUrl;
-  console.log('[UI auth debug] Generating IAM token with audience:', targetAudience);
+  // Enforce absolute origin isolation (drops trailing slashes and paths)
+  let targetAudience = '';
+  try {
+    const cleanedUrl = backendUrl.trim();
+    const parsedUrl = new URL(cleanedUrl);
+    targetAudience = parsedUrl.origin;
+  } catch (e) {
+    console.error('[UI auth debug] Critical: Could not parse backendUrl.', e);
+    targetAudience = backendUrl.trim();
+  }
+
+  console.log('[UI auth debug] Fetching explicit OIDC token for audience:', targetAudience);
 
   try {
-    const client = await googleAuth.getIdTokenClient(targetAudience);
+    // 1. First, attempt to query the native Cloud Run metadata server directly.
+    // This bypasses local file caches and environment pollution entirely.
+    const metadataUrl = `http://google.internal{encodeURIComponent(targetAudience)}`;
     
-    // FIXED: Force the library to fetch the actual token via idTokenProvider.
-    // This resolves the empty object behavior seen when testing locally.
-    let idToken;
+    const metadataResponse = await fetch(metadataUrl, {
+      headers: { 'Metadata-Flavor': 'Google' }
+    });
+
+    if (metadataResponse.ok) {
+      const idToken = await metadataResponse.text();
+      console.log('[UI auth debug] Token grabbed via direct Metadata Server. Length:', idToken.length);
+      return {
+        Authorization: `Bearer ${idToken.trim()}`,
+      };
+    }
+    
+    console.warn(`[UI auth debug] Direct metadata endpoint returned status ${metadataResponse.status}. Falling back to library.`);
+
+    // 2. Structural Fallback: If metadata server isn't responsive, use the library's direct provider
+    const client = await googleAuth.getIdTokenClient(targetAudience);
+    let fallbackToken;
+    
     if (client.idTokenProvider && typeof client.idTokenProvider.fetchIdToken === 'function') {
-      idToken = await client.idTokenProvider.fetchIdToken(targetAudience);
+      fallbackToken = await client.idTokenProvider.fetchIdToken(targetAudience);
     } else {
       const headers = await client.getRequestHeaders(targetAudience);
       const rawHeader = headers.Authorization || headers.authorization || '';
-      idToken = rawHeader.replace(/^Bearer\s+/i, '');
+      fallbackToken = rawHeader.replace(/^Bearer\s+/i, '');
     }
 
-    if (!idToken) {
-      throw new Error('Fetched identity token is empty or undefined.');
+    if (!fallbackToken) {
+      throw new Error('All OIDC token retrieval mechanisms returned empty.');
     }
 
-    console.log('[UI auth debug] IAM token headers received:', {
-      hasAuthorization: true,
-      authorizationLength: idToken.length,
-    });
-
+    console.log('[UI auth debug] Token grabbed via fallback provider. Length:', fallbackToken.length);
     return {
-      Authorization: `Bearer ${idToken}`,
+      Authorization: `Bearer ${fallbackToken}`,
     };
+
   } catch (error) {
-    console.error('[UI auth debug] Failed to generate IAM auth headers:', error);
+    console.error('[UI auth debug] Critical error generating OIDC auth headers:', error);
     throw error;
   }
 }
