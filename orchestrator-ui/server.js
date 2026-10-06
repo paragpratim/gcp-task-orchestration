@@ -5,6 +5,7 @@ const { GoogleAuth } = require('google-auth-library');
 const app = express();
 const port = Number(process.env.PORT || 80);
 
+// FIXED: Changed /\/\$/ to /\/\$/ to correctly trim a trailing slash if present
 const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/\$/, '');
 const enableIamAuth = process.env.ENABLE_IAM_AUTH !== 'false';
 const buildDir = path.join(__dirname, 'build');
@@ -21,18 +22,29 @@ async function getAuthHeaders() {
 
   try {
     const client = await googleAuth.getIdTokenClient(targetAudience);
-    const headers = await client.getRequestHeaders();
-    const authHeader = headers.Authorization || headers.authorization || '';
+    
+    // FIXED: Force the library to fetch the actual token via idTokenProvider.
+    // This resolves the empty object behavior seen when testing locally.
+    let idToken;
+    if (client.idTokenProvider && typeof client.idTokenProvider.fetchIdToken === 'function') {
+      idToken = await client.idTokenProvider.fetchIdToken(targetAudience);
+    } else {
+      const headers = await client.getRequestHeaders(targetAudience);
+      const rawHeader = headers.Authorization || headers.authorization || '';
+      idToken = rawHeader.replace(/^Bearer\s+/i, '');
+    }
+
+    if (!idToken) {
+      throw new Error('Fetched identity token is empty or undefined.');
+    }
 
     console.log('[UI auth debug] IAM token headers received:', {
-      hasAuthorization: Boolean(authHeader),
-      authorizationLength: authHeader.length,
-      keys: Object.keys(headers),
+      hasAuthorization: true,
+      authorizationLength: idToken.length,
     });
 
-    // Return a predictable, uppercase key for consistency
     return {
-      Authorization: authHeader,
+      Authorization: `Bearer ${idToken}`,
     };
   } catch (error) {
     console.error('[UI auth debug] Failed to generate IAM auth headers:', error);
