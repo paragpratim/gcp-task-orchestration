@@ -121,19 +121,15 @@ jobs:
         id: get-backend-url
         run: |
           BACKEND_SERVICE_URL=$(gcloud run services describe task-orchestration-api --region=${{ env.REGION }} --format="value(status.url)")
-          # BACKEND_HOST="${BACKEND_SERVICE_URL#http://}"
-          # BACKEND_HOST="${BACKEND_HOST#https://}"
-
-          # if [[ "$BACKEND_SERVICE_URL" == https://* ]]; then
-          #   BACKEND_PORT=443
-          # else
-          #   BACKEND_PORT=8080
-          # fi
 
           echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
-          # echo "BACKEND_HOST=$BACKEND_HOST" >> "$GITHUB_OUTPUT"
-          # echo "BACKEND_PORT=$BACKEND_PORT" >> "$GITHUB_OUTPUT"
           echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
+
+      - name: Add Custom audience to Backend Service
+        run: |
+          gcloud run services update task-orchestration-api \
+            --region=${{ env.REGION }} \
+            --add-custom-audiences="${{ steps.get-backend-url.outputs.BACKEND_SERVICE_URL }}"
 
       - name: Update Cloud Run service YAML [orchestrator-ui] with environment variables and image tags
         env:
