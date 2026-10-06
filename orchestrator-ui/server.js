@@ -47,12 +47,23 @@ async function proxyRequest(req, res) {
     requestBody = req.body;
   }
 
+  const outgoingHeaders = {
+    ...requestHeaders,
+    ...authHeaders, // The clean Google Cloud IAM OIDC token is now securely injected alone
+  };
+
+  console.log('[UI proxy debug]', {
+    method: req.method,
+    targetUrl: targetUrl.toString(),
+    hasAuthHeader: Boolean(outgoingHeaders.Authorization || outgoingHeaders.authorization),
+    authHeaderPreview: (outgoingHeaders.Authorization || outgoingHeaders.authorization || '').slice(0, 20) + '...',
+    contentType: outgoingHeaders['content-type'] || outgoingHeaders['Content-Type'] || null,
+    bodyLength: requestBody ? requestBody.length : 0,
+  });
+
   const upstreamResponse = await fetch(targetUrl, {
     method: req.method,
-    headers: {
-      ...requestHeaders,
-      ...authHeaders, // The clean Google Cloud IAM OIDC token is now securely injected alone
-    },
+    headers: outgoingHeaders,
     body: requestBody,
   });
 
