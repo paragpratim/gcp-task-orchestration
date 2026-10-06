@@ -31,6 +31,7 @@ resource "google_project_iam_member" "orchestrator_service_account_roles" {
     "roles/artifactregistry.writer",
     "roles/cloudtasks.admin",
     "roles/iam.serviceAccountTokenCreator",
+    "roles/iam.serviceAccountUser",
     "roles/datastore.user",
     "roles/iap.httpsResourceAccessor",
     "roles/run.admin",
