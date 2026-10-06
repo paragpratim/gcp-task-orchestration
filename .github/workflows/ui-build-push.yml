@@ -55,8 +55,8 @@ jobs:
           IMAGE_TAG: ${{ inputs.image_tag }}
           ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
         run: |
-          docker build -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }} \
-                       -t ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest \
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.UI_SERVICE_NAME }}:${{ env.IMAGE_TAG }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.UI_SERVICE_NAME }}:latest \
                        ./orchestrator-ui
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:${{ env.IMAGE_TAG }}
-          docker push ${{ env.ARTIFACT_REGISTRY }}/task-orchestration-ui:latest
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.UI_SERVICE_NAME }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.UI_SERVICE_NAME }}:latest
