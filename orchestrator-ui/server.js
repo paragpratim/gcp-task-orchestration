@@ -23,7 +23,7 @@ async function getAuthHeaders() {
     console.error('[UI auth debug] Could not parse backendUrl; using raw value:', backendUrl, error);
   }
 
-  const metadataUrl = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(targetAudience)}`;
+  const metadataUrl = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(targetAudience)}&format=full`;
 
   console.log('[UI auth debug] Fetching OIDC token from metadata server for audience:', targetAudience);
 
