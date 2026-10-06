@@ -39,7 +39,6 @@ resource "google_cloud_tasks_queue" "queues" {
 resource "google_project_iam_member" "dispatcher_service_account_roles" {
   for_each = toset([
     "roles/cloudtasks.admin",
-    "roles/iap.httpsResourceAccessor",
   ])
 
   project    = var.project_id
@@ -50,8 +49,8 @@ resource "google_project_iam_member" "dispatcher_service_account_roles" {
 
 resource "google_service_account_iam_member" "orchestrator_can_impersonate_dispatcher" {
   for_each = toset([
-    "roles/iam.serviceAccountUser",
-    "roles/iam.serviceAccountTokenCreator",
+    # "roles/iam.serviceAccountUser",
+    # "roles/iam.serviceAccountTokenCreator",
   ])
 
   service_account_id = google_service_account.dispatcher_service_account.name
