@@ -30,7 +30,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
   REGION: europe-west1
-  # ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
+  ARTIFACT_REGISTRY: task-orchestrator
   APP_ENV: ${{ github.event.inputs.app_env || 'dev' }}
   API_SERVICE_NAME: task-orchestration-api
   UI_SERVICE_NAME: task-orchestration-ui
@@ -40,22 +40,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}
-      region: ${{ steps.set-values.outputs.REGION }}
-      api_service_name: ${{ steps.set-values.outputs.API_SERVICE_NAME }}
-      ui_service_name: ${{ steps.set-values.outputs.UI_SERVICE_NAME }}
-      artifact_registry: ${{ steps.set-values.outputs.ARTIFACT_REGISTRY }}
+      region: ${{ env.REGION }}
+      api_service_name: ${{ env.API_SERVICE_NAME }}
+      ui_service_name: ${{ env.UI_SERVICE_NAME }}
+      artifact_registry: ${{ env.ARTIFACT_REGISTRY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set values
-        id: set-values
-        run: |
-          echo "REGION=${{ env.REGION }}" >> "$GITHUB_OUTPUT"
-          echo "API_SERVICE_NAME=${{ env.API_SERVICE_NAME }}" >> "$GITHUB_OUTPUT"
-          echo "UI_SERVICE_NAME=${{ env.UI_SERVICE_NAME }}" >> "$GITHUB_OUTPUT"
-          # echo "ARTIFACT_REGISTRY=${{ env.REGION }}-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator" >> "$GITHUB_OUTPUT"
-          echo "ARTIFACT_REGISTRY=${{ env.REGION }}-docker.pkg.dev/------/task-orchestrator" >> "$GITHUB_OUTPUT"
 
       - name: Set image tag
         id: set-tag
@@ -198,8 +189,8 @@ jobs:
           echo "✅ **Trigger:** \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "✅ **Branch/Ref:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "✅ **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "✅ **Backend Image:** \`${{ needs.prepare.outputs.artifact_registry }}/${{ env.API_SERVICE_NAME }}:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "✅ **Frontend Image:** \`${{ needs.prepare.outputs.artifact_registry }}/${{ env.UI_SERVICE_NAME }}:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/${{ env.API_SERVICE_NAME }}:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **Frontend Image:** \`${{ env.ARTIFACT_REGISTRY }}/${{ env.UI_SERVICE_NAME }}:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## 🌐 Application URLs" >> "$GITHUB_STEP_SUMMARY"
           echo "🏠 **Frontend:** [${{ steps.get-service-urls.outputs.UI_SERVICE_URL }}](${{ steps.get-service-urls.outputs.UI_SERVICE_URL }})" >> "$GITHUB_STEP_SUMMARY"

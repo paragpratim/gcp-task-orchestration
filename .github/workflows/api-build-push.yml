@@ -83,7 +83,7 @@ jobs:
       - name: Build and push api image
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
-          ARTIFACT_REGISTRY: ${{ inputs.artifact_registry }}
+          ARTIFACT_REGISTRY: ${{ inputs.region }}-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/${{ inputs.artifact_registry }}
         run: |
           docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ inputs.api_service_name }}:${{ env.IMAGE_TAG }} \
                        -t ${{ env.ARTIFACT_REGISTRY }}/${{ inputs.api_service_name }}:latest \
