@@ -5,7 +5,7 @@ const app = express();
 const port = Number(process.env.PORT || 80);
 
 // FIXED: Changed /\/\$/ to /\/\$/ to correctly trim a trailing slash if present
-const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/\$/, '');
+const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/+$/, '');
 const enableIamAuth = process.env.ENABLE_IAM_AUTH !== 'false';
 const buildDir = path.join(__dirname, 'build');
 
@@ -65,6 +65,10 @@ async function proxyRequest(req, res) {
   // Strip any incoming user authorization headers from the client.
   delete requestHeaders.authorization;
   delete requestHeaders.Authorization;
+
+  // IAP adds this UI-audience token; Cloud Run prefers it over Authorization, causing a 401 on the backend.
+  delete requestHeaders['x-serverless-authorization'];
+  delete requestHeaders['x-goog-iap-jwt-assertion'];
 
   // Correctly construct the full target URL
   const targetUrl = new URL(req.originalUrl, `${backendUrl}/`);
