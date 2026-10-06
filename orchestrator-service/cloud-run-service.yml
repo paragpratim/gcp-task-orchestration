@@ -1,7 +1,7 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: task-orchestration-api
+  name: ${API_SERVICE_NAME}
   annotations:
     run.googleapis.com/ingress: all
 spec:
@@ -18,8 +18,8 @@ spec:
       containerConcurrency: 80
       timeoutSeconds: 300
       containers:
-        - name: task-orchestration-api
-          image: ${ARTIFACT_REGISTRY}/task-orchestration-api:latest
+        - name: ${API_SERVICE_NAME}
+          image: ${ARTIFACT_REGISTRY}/${API_SERVICE_NAME}:latest
           env:
             - name: APP_ENV
               value: ${APP_ENV}

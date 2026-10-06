@@ -32,6 +32,8 @@ env:
   REGION: europe-west1
   ARTIFACT_REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}/task-orchestrator
   APP_ENV: ${{ github.event.inputs.app_env || 'dev' }}
+  API_SERVICE_NAME: task-orchestration-api
+  UI_SERVICE_NAME: task-orchestration-ui
 
 jobs:
   prepare:
@@ -96,20 +98,32 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
           region: ${{ env.REGION }}
 
+      - name: Get Service URLs
+        id: get-service-urls
+        run: |
+          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
+
+          BACKEND_SERVICE_URL="https://${{ env.API_SERVICE_NAME }}-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
+          UI_SERVICE_URL="https://${{ env.UI_SERVICE_NAME }}-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
+
+          echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
+          echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
+          echo "UI_SERVICE_URL=$UI_SERVICE_URL" >> "$GITHUB_OUTPUT"
+          echo "🚀 UI service deployed at: $UI_SERVICE_URL"
+
+
       - name: Update Cloud Run service YAML [orchestrator-service] with environment variables and image tags
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
           APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
-          GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
           FIRESTORE_DB: orchestrator
-          QUEUE_BASE_URL: "" # Add this if using Private DNS
+          QUEUE_BASE_URL: ${{ steps.get-service-urls.outputs.BACKEND_SERVICE_URL }}
           QUEUE_SERVICE_ACCOUNT: svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           cp orchestrator-service/cloud-run-service.yml cloud-run-service-deploy.yml
           envsubst < cloud-run-service-deploy.yml > cloud-run-service-final.yml
           mv cloud-run-service-final.yml cloud-run-service-deploy.yml
-          sed -i "s|task-orchestration-api:latest|task-orchestration-api:${{ env.IMAGE_TAG }}|g" cloud-run-service-deploy.yml
+          sed -i "s|${{ env.API_SERVICE_NAME }}:latest|${{ env.API_SERVICE_NAME }}:${{ env.IMAGE_TAG }}|g" cloud-run-service-deploy.yml
           echo "Updated YAML file:"
           cat cloud-run-service-deploy.yml
 
@@ -117,28 +131,16 @@ jobs:
         run: |
           gcloud run services replace cloud-run-service-deploy.yml --region=${{ env.REGION }}
 
-      - name: Get Backend service URL
-        id: get-backend-url
-        run: |
-          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
-          BACKEND_SERVICE_URL="https://task-orchestration-api-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
-
-          echo "BACKEND_SERVICE_URL=$BACKEND_SERVICE_URL" >> "$GITHUB_OUTPUT"
-          echo "🚀 Backend service deployed at: $BACKEND_SERVICE_URL"
-
       - name: Update Cloud Run service YAML [orchestrator-ui] with environment variables and image tags
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
           APP_ENV: ${{ github.event.inputs.app_env || env.APP_ENV || 'dev' }}
-          GCP_PROJECT_ID: ${{ env.PROJECT_ID }}
-          REGION: ${{ env.REGION }}
-          # BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_HOST }}:${{ steps.get-backend-url.outputs.BACKEND_PORT }}
-          BACKEND_URL: ${{ steps.get-backend-url.outputs.BACKEND_SERVICE_URL }}
+          BACKEND_URL: ${{ steps.get-service-urls.outputs.BACKEND_SERVICE_URL }}
         run: |
           cp orchestrator-ui/cloud-run-ui.yml cloud-run-ui-deploy.yml
           envsubst < cloud-run-ui-deploy.yml > cloud-run-ui-final.yml
           mv cloud-run-ui-final.yml cloud-run-ui-deploy.yml
-          sed -i "s|task-orchestration-ui:latest|task-orchestration-ui:${{ env.IMAGE_TAG }}|g" cloud-run-ui-deploy.yml
+          sed -i "s|${{ env.UI_SERVICE_NAME }}:latest|${{ env.UI_SERVICE_NAME }}:${{ env.IMAGE_TAG }}|g" cloud-run-ui-deploy.yml
           echo "Updated YAML file:"
           cat cloud-run-ui-deploy.yml
 
@@ -148,8 +150,8 @@ jobs:
 
       - name: Configure Cloud Run [orchestrator-ui] for IAP
         run: |
-          echo "Enabling IAP for task-orchestration-ui..."
-          gcloud beta run services update task-orchestration-ui \
+          echo "Enabling IAP for ${{ env.UI_SERVICE_NAME }}..."
+          gcloud beta run services update ${{ env.UI_SERVICE_NAME }} \
           --region=${{ env.REGION }} \
           --iap
 
@@ -157,7 +159,7 @@ jobs:
           PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
 
           echo "Grant invoker permission to the IAP service agent..."
-          gcloud run services add-iam-policy-binding task-orchestration-ui \
+          gcloud run services add-iam-policy-binding ${{ env.UI_SERVICE_NAME }} \
             --region=${{ env.REGION }} \
             --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
@@ -165,19 +167,10 @@ jobs:
       - name: Grant task dispatcher service account Cloud Run invoker access
         run: |
           echo "Granting Cloud Run invoker permission to the task dispatcher service account..."
-          gcloud run services add-iam-policy-binding task-orchestration-api \
+          gcloud run services add-iam-policy-binding ${{ env.API_SERVICE_NAME }} \
             --region=${{ env.REGION }} \
             --member="serviceAccount:svc-cr-task-dispatcher@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --role="roles/run.invoker"
-
-      - name: Get UI service URL
-        id: get-url
-        run: |
-          PROJECT_NUMBER=$(gcloud projects describe ${{ env.PROJECT_ID }} --format="value(projectNumber)")
-          SERVICE_URL="https:/task-orchestration-ui-${PROJECT_NUMBER}.${{ env.REGION }}.run.app"
-
-          echo "SERVICE_URL=$SERVICE_URL" >> "$GITHUB_OUTPUT"
-          echo "🚀 Service deployed at: $SERVICE_URL"
 
       - name: Output deployment info
         env:
@@ -190,13 +183,13 @@ jobs:
           echo "✅ **Backend Image:** \`${{ env.ARTIFACT_REGISTRY }}/task-orchestration-api:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## 🌐 Application URLs" >> "$GITHUB_STEP_SUMMARY"
-          echo "🏠 **Frontend:** [${{ steps.get-url.outputs.SERVICE_URL }}](${{ steps.get-url.outputs.SERVICE_URL }})" >> "$GITHUB_STEP_SUMMARY"
-          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-url.outputs.SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-url.outputs.SERVICE_URL }}/swagger/index.html)" >> "$GITHUB_STEP_SUMMARY"
+          echo "🏠 **Frontend:** [${{ steps.get-service-urls.outputs.UI_SERVICE_URL }}](${{ steps.get-service-urls.outputs.UI_SERVICE_URL }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "📚 **API Documentation (Swagger UI):** [${{ steps.get-service-urls.outputs.UI_SERVICE_URL }}/swagger/swagger-ui/index.html](${{ steps.get-service-urls.outputs.UI_SERVICE_URL }}/swagger/index.html)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "> **Note:** These URLs are protected by Google Cloud IAP and require authentication." >> "$GITHUB_STEP_SUMMARY"
 
     outputs:
-      service_url: ${{ steps.get-url.outputs.SERVICE_URL }}
+      ui_service_url: ${{ steps.get-service-urls.outputs.UI_SERVICE_URL }}
       image_tag: ${{ needs.prepare.outputs.image_tag }}
 
   post-deploy:
@@ -214,8 +207,8 @@ jobs:
           echo "   - Image Tag: ${{ needs.deploy.outputs.image_tag }}"
           echo ""
           echo "🌐 **Application URLs:**"
-          echo "   - Frontend: ${{ needs.deploy.outputs.service_url }}"
-          echo "   - Swagger UI: ${{ needs.deploy.outputs.service_url }}/swagger/index.html"
+          echo "   - Frontend: ${{ needs.deploy.outputs.ui_service_url }}"
+          echo "   - Swagger UI: ${{ needs.deploy.outputs.ui_service_url }}/swagger/index.html"
           echo ""
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "✅ Automatic deployment triggered by push to main branch"
