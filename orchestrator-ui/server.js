@@ -12,17 +12,32 @@ const googleAuth = new GoogleAuth();
 
 async function getAuthHeaders() {
   if (!enableIamAuth) {
+    console.log('[UI auth debug] IAM auth disabled via ENABLE_IAM_AUTH');
     return {};
   }
 
   const targetAudience = backendUrl;
-  const client = await googleAuth.getIdTokenClient(targetAudience);
-  const headers = await client.getRequestHeaders();
+  console.log('[UI auth debug] Generating IAM token with audience:', targetAudience);
 
-  // Return a predictable, uppercase key for consistency
-  return {
-    Authorization: headers.Authorization || headers.authorization || '',
-  };
+  try {
+    const client = await googleAuth.getIdTokenClient(targetAudience);
+    const headers = await client.getRequestHeaders();
+    const authHeader = headers.Authorization || headers.authorization || '';
+
+    console.log('[UI auth debug] IAM token headers received:', {
+      hasAuthorization: Boolean(authHeader),
+      authorizationLength: authHeader.length,
+      keys: Object.keys(headers),
+    });
+
+    // Return a predictable, uppercase key for consistency
+    return {
+      Authorization: authHeader,
+    };
+  } catch (error) {
+    console.error('[UI auth debug] Failed to generate IAM auth headers:', error);
+    throw error;
+  }
 }
 
 async function proxyRequest(req, res) {
@@ -39,6 +54,14 @@ async function proxyRequest(req, res) {
 
   // Correctly construct the full target URL
   const targetUrl = new URL(req.originalUrl, `${backendUrl}/`);
+  console.log('[UI proxy debug] Request received:', {
+    method: req.method,
+    originalUrl: req.originalUrl,
+    backendUrl,
+    resolvedTargetUrl: targetUrl.toString(),
+    hasBody: Boolean(req.body),
+  });
+
   const authHeaders = await getAuthHeaders();
 
   // Handle body payload correctly for native fetch
