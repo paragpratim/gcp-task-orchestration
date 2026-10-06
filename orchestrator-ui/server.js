@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const { GoogleAuth } = require('google-auth-library');
 
 const app = express();
 const port = Number(process.env.PORT || 80);
@@ -9,7 +8,6 @@ const port = Number(process.env.PORT || 80);
 const backendUrl = (process.env.BACKEND_URL || 'https://task-orchestration-api.internal').replace(/\/\$/, '');
 const enableIamAuth = process.env.ENABLE_IAM_AUTH !== 'false';
 const buildDir = path.join(__dirname, 'build');
-const googleAuth = new GoogleAuth();
 
 async function getAuthHeaders() {
   if (!enableIamAuth) {
@@ -17,65 +15,41 @@ async function getAuthHeaders() {
     return {};
   }
 
-  // Enforce absolute origin isolation (drops trailing slashes and paths)
-  let targetAudience = '';
+  let targetAudience = backendUrl.trim();
   try {
-    const cleanedUrl = backendUrl.trim();
-    const parsedUrl = new URL(cleanedUrl);
+    const parsedUrl = new URL(targetAudience);
     targetAudience = parsedUrl.origin;
-  } catch (e) {
-    console.error('[UI auth debug] Critical: Could not parse backendUrl.', e);
-    targetAudience = backendUrl.trim();
+  } catch (error) {
+    console.error('[UI auth debug] Could not parse backendUrl; using raw value:', backendUrl, error);
   }
 
-  console.log('[UI auth debug] Fetching OIDC token for audience:', targetAudience);
+  const metadataUrl = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(targetAudience)}`;
 
-  // 1. First Attempt: Safely try to query the native Cloud Run metadata server directly
+  console.log('[UI auth debug] Fetching OIDC token from metadata server for audience:', targetAudience);
+
   try {
-    // FIXED: Using the absolute Google Cloud Metadata engine path with proper variable injection (\$)
-    const metadataUrl = `http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=${encodeURIComponent(targetAudience)}`;
-    
     const metadataResponse = await fetch(metadataUrl, {
-      headers: { 'Metadata-Flavor': 'Google' }
+      headers: { 'Metadata-Flavor': 'Google' },
     });
 
-    if (metadataResponse.ok) {
-      const idToken = await metadataResponse.text();
-      console.log('[UI auth debug] Token grabbed via direct Metadata Server. Length:', idToken.length);
-      return {
-        Authorization: `Bearer ${idToken.trim()}`,
-      };
-    }
-    
-    console.warn(`[UI auth debug] Direct metadata endpoint returned status ${metadataResponse.status}. Falling back to library.`);
-  } catch (metadataError) {
-    console.warn('[UI auth debug] Direct metadata server fetch failed, proceeding with library fallback. Error:', metadataError.message);
-  }
-
-  // 2. Fallback: Use the library's direct token provider if the direct fetch failed
-  try {
-    const client = await googleAuth.getIdTokenClient(targetAudience);
-    let fallbackToken;
-    
-    if (client.idTokenProvider && typeof client.idTokenProvider.fetchIdToken === 'function') {
-      fallbackToken = await client.idTokenProvider.fetchIdToken(targetAudience);
-    } else {
-      const headers = await client.getRequestHeaders(targetAudience);
-      const rawHeader = headers.Authorization || headers.authorization || '';
-      fallbackToken = rawHeader.replace(/^Bearer\s+/i, '');
+    if (!metadataResponse.ok) {
+      const body = await metadataResponse.text();
+      console.error('[UI auth debug] Metadata token request failed:', {
+        status: metadataResponse.status,
+        statusText: metadataResponse.statusText,
+        body,
+      });
+      return {};
     }
 
-    if (!fallbackToken) {
-      throw new Error('All OIDC token retrieval mechanisms returned empty.');
-    }
+    const idToken = (await metadataResponse.text()).trim();
+    console.log('[UI auth debug] Token retrieved from metadata server. Length:', idToken.length);
 
-    console.log('[UI auth debug] Token grabbed via fallback provider. Length:', fallbackToken.length);
     return {
-      Authorization: `Bearer ${fallbackToken}`,
+      Authorization: `Bearer ${idToken}`,
     };
-
   } catch (error) {
-    console.error('[UI auth debug] Critical error generating OIDC auth headers:', error);
+    console.error('[UI auth debug] Failed to fetch IAM token from metadata server:', error);
     throw error;
   }
 }
