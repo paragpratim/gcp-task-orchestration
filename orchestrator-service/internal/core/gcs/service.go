@@ -108,36 +108,18 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		return nil
 	}
 
-	rawObjects, err := s.storageRepo.ListObjects(ctx, jobConfig.Source.BucketName, jobConfig.Source.Prefix)
+	matchedObjects, err := s.storageRepo.ListObjects(ctx, jobConfig.Source.BucketName, jobConfig.Source.Prefix, jobConfig.Source.FilePattern)
 	if err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "GCS object discovery failure", err)
 		return nil
 	}
 
-	var matchedObjects []string
-	pattern := jobConfig.Source.FilePattern
-	if pattern == "" {
-		pattern = "*" // If empty, evaluate as wildcard matching everything
-	}
-
-	for _, objectKey := range rawObjects {
-		baseFilename := filepath.Base(objectKey)
-		isMatched, err := filepath.Match(pattern, baseFilename)
-		if err != nil {
-			s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Glob validation engine syntax compilation failure", err)
-			return nil
-		}
-
-		if isMatched {
-			matchedObjects = append(matchedObjects, objectKey)
-		}
-	}
-
+	fullFilePattern := fmt.Sprintf("gs://%s/%s/%s", jobConfig.Source.BucketName, jobConfig.Source.Prefix, jobConfig.Source.FilePattern)
 	// Branch based on discovery matching volume metrics
 	if len(matchedObjects) == 0 {
-		logger.Warn("Zero objects matched expression pattern. Terminating workflow step safely.", "JOB_ID", jobID, "TASK_ID", taskID, "PATTERN", pattern)
+		logger.Warn("Zero objects matched expression pattern. Terminating workflow step safely.", "JOB_ID", jobID, "TASK_ID", taskID, "PATTERN", fullFilePattern)
 		statusTracker.Status = models.StatusSkipped
-		statusTracker.Message = fmt.Sprintf("GCS scan finalized. Zero matching files identified for criteria: %s", pattern)
+		statusTracker.Message = fmt.Sprintf("GCS scan finalized. Zero matching files identified for criteria: %s", fullFilePattern)
 		statusTracker.UpdatedAt = time.Now().UTC()
 		_, _ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker)
 		return nil // Short-circuit execution loop cleanly; downstream pipeline calls are skipped

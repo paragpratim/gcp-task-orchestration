@@ -12,7 +12,7 @@ import (
 
 // ObjectRepository defines the interface for interacting with object storage.
 type ObjectRepository interface {
-	ListObjects(ctx context.Context, bucketName, prefix string) ([]string, error)
+	ListObjects(ctx context.Context, bucketName, prefix, filePattern string) ([]string, error)
 	MoveFile(ctx context.Context, bucketName, srcObject, dstObject string) error
 	Close() error
 }
@@ -44,12 +44,12 @@ func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, 
 	}, nil
 }
 
-// ListObjects retrieves a list of object names from the specified bucket that match the given prefix.
-func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string) ([]string, error) {
+// ListObjects retrieves a list of object names from the specified bucket that match the given prefix and file pattern.
+func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string, filePattern string) ([]string, error) {
 	var objects []string
 
-	// Create an object query filter targeting the folder/prefix path
-	query := &storage.Query{Prefix: prefix}
+	// Create an object query filter targeting the folder/prefix path and applying the file pattern for matching
+	query := &storage.Query{Prefix: prefix, Delimiter: "/", MatchGlob: filePattern}
 	it := r.storageClient.Bucket(bucketName).Objects(ctx, query)
 
 	for {
