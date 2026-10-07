@@ -8,6 +8,303 @@
     },
     "basePath": "/api/v1",
     "paths": {
+        "/admin/health": {
+            "get": {
+                "description": "Responds with an OK status if the api is running.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/job": {
+            "put": {
+                "description": "Accepts an update request for an existing admin job and processes it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update Job",
+                "parameters": [
+                    {
+                        "description": "Job Update Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/orchestrator_internal_models.JobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Updated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Accepts a new admin job request and processes it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create Job",
+                "parameters": [
+                    {
+                        "description": "Job Request Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/orchestrator_internal_models.JobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Job Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/job/{id}": {
+            "get": {
+                "description": "Retrieves an existing admin job by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/orchestrator_internal_models.JobDefinition"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an existing admin job by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job Deleted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/jobs": {
+            "get": {
+                "description": "Retrieves all existing admin jobs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get All Jobs",
+                "responses": {
+                    "200": {
+                        "description": "Jobs Retrieved",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/orchestrator_internal_models.JobDefinition"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/jobs/queue": {
+            "post": {
+                "description": "Queues all the active admin jobs for processing.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Queue Active Jobs",
+                "parameters": [
+                    {
+                        "description": "Queue Jobs Request Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/orchestrator_internal_models.JobDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Jobs Queued",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/jobs/status": {
+            "get": {
+                "description": "Retrieves the status of all admin jobs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get Job Statuses",
+                "responses": {
+                    "200": {
+                        "description": "Job Statuses Retrieved",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/orchestrator_internal_models.JobStatus"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/bigquery/job/check": {
             "post": {
                 "description": "Retrieves the details of a specific BigQuery job by its ID.",
@@ -219,303 +516,6 @@
                     }
                 }
             }
-        },
-        "/intake/health": {
-            "get": {
-                "description": "Responds with an OK status if the api is running.",
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Health check",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/intake/job": {
-            "put": {
-                "description": "Accepts an update request for an existing intake job and processes it.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Update Intake Job",
-                "parameters": [
-                    {
-                        "description": "Intake Job Update Payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job Updated",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Accepts a new intake job request and processes it.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Create Intake Job",
-                "parameters": [
-                    {
-                        "description": "Intake Job Request Payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Job Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/intake/job/{id}": {
-            "get": {
-                "description": "Retrieves an existing intake job by its ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Get Intake Job",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Intake Job ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job Retrieved",
-                        "schema": {
-                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Deletes an existing intake job by its ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Delete Intake Job",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Intake Job ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Job Deleted",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/intake/jobs": {
-            "get": {
-                "description": "Retrieves all existing intake jobs.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Get All Intake Jobs",
-                "responses": {
-                    "200": {
-                        "description": "Jobs Retrieved",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/intake/jobs/queue": {
-            "post": {
-                "description": "Queues all the active intake jobs for processing.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Queue Active Intake Jobs",
-                "parameters": [
-                    {
-                        "description": "Queue Jobs Request Payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/orchestrator_internal_models.IntakeJobDefinition"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Jobs Queued",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/intake/jobs/status": {
-            "get": {
-                "description": "Retrieves the status of all intake jobs.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "intake"
-                ],
-                "summary": "Get Intake Job Statuses",
-                "responses": {
-                    "200": {
-                        "description": "Job Statuses Retrieved",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/orchestrator_internal_models.JobStatus"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -581,7 +581,7 @@
                 "StatusFailedDataflow"
             ]
         },
-        "orchestrator_internal_models.IntakeJobDefinition": {
+        "orchestrator_internal_models.JobDefinition": {
             "type": "object",
             "properties": {
                 "created_at": {

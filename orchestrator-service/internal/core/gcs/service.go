@@ -21,12 +21,12 @@ type Config struct {
 	StatusCollection string
 	GcsQueueName     string
 	BqQueueName      string
-	IntakeQueueName  string
+	AdminQueueName   string
 }
 
 // Service provides methods to manage GCS file operations and task scheduling.
 type Service struct {
-	jobsRepo    gcp.DocumentRepository[models.IntakeJobDefinition]
+	jobsRepo    gcp.DocumentRepository[models.JobDefinition]
 	statusRepo  gcp.DocumentRepository[models.JobStatus]
 	tasksRepo   gcp.TaskRepository
 	storageRepo gcp.ObjectRepository
@@ -34,7 +34,7 @@ type Service struct {
 }
 
 // NewService creates a new instance of the GCS Service with the provided repositories and configuration.
-func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, storage gcp.ObjectRepository, cfg Config) *Service {
+func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, storage gcp.ObjectRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:    jobs,
 		statusRepo:  status,
@@ -68,7 +68,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	if err != nil {
 		return fmt.Errorf("failed marshalling next-run payload for job %s: %w", jobID, err)
 	}
-	if err := s.tasksRepo.Put(ctx, s.cfg.IntakeQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), nextRunBytes, nextRunInterval); err != nil {
+	if err := s.tasksRepo.Put(ctx, s.cfg.AdminQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), nextRunBytes, nextRunInterval); err != nil {
 		return fmt.Errorf("failed scheduling next run for job %s: %w", jobID, err)
 	}
 
@@ -288,7 +288,7 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 }
 
 // loadDiscoveredFilesContext retrieves the list of discovered files and the job configuration for the given job ID.
-func (s *Service) loadDiscoveredFilesContext(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus) ([]string, *models.IntakeJobDefinition, error) {
+func (s *Service) loadDiscoveredFilesContext(ctx context.Context, jobID, taskID string, statusTracker *models.JobStatus) ([]string, *models.JobDefinition, error) {
 	rawFiles, exists := statusTracker.Metadata[models.MetadataKeyDiscovered]
 	if !exists || rawFiles == nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Metadata list 'discovered_files' is missing.", nil)

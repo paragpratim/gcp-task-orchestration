@@ -8,7 +8,7 @@ resource "google_service_account" "dispatcher_service_account" {
 # Create Cloud Tasks queues used by the orchestrator
 resource "google_cloud_tasks_queue" "queues" {
   for_each = toset([
-    "orchestrator-intake-queue-${var.env}",
+    "orchestrator-admin-queue-${var.env}",
     "orchestrator-gcs-queue-${var.env}",
     "orchestrator-bq-queue-${var.env}",
   ])

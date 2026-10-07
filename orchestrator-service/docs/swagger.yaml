@@ -56,7 +56,7 @@ definitions:
     - StatusProcessingDataflow
     - StatusCompletedDataflow
     - StatusFailedDataflow
-  orchestrator_internal_models.IntakeJobDefinition:
+  orchestrator_internal_models.JobDefinition:
     properties:
       created_at:
         type: string
@@ -127,6 +127,202 @@ info:
   title: GCP Task Orchestration API
   version: "1.0"
 paths:
+  /admin/health:
+    get:
+      description: Responds with an OK status if the api is running.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+  /admin/job:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a new admin job request and processes it.
+      parameters:
+      - description: Job Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Job Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Job
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Accepts an update request for an existing admin job and processes
+        it.
+      parameters:
+      - description: Job Update Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Updated
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Job
+      tags:
+      - admin
+  /admin/job/{id}:
+    delete:
+      description: Deletes an existing admin job by its ID.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Job
+      tags:
+      - admin
+    get:
+      description: Retrieves an existing admin job by its ID.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Retrieved
+          schema:
+            $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job
+      tags:
+      - admin
+  /admin/jobs:
+    get:
+      description: Retrieves all existing admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Jobs Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get All Jobs
+      tags:
+      - admin
+  /admin/jobs/queue:
+    post:
+      consumes:
+      - application/json
+      description: Queues all the active admin jobs for processing.
+      parameters:
+      - description: Queue Jobs Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Jobs Queued
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Queue Active Jobs
+      tags:
+      - admin
+  /admin/jobs/status:
+    get:
+      description: Retrieves the status of all admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Statuses Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobStatus'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job Statuses
+      tags:
+      - admin
   /bigquery/job/check:
     post:
       description: Retrieves the details of a specific BigQuery job by its ID.
@@ -269,200 +465,4 @@ paths:
       summary: Move Files and Queue Ingestion
       tags:
       - gcs
-  /intake/health:
-    get:
-      description: Responds with an OK status if the api is running.
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Health check
-      tags:
-      - health
-  /intake/job:
-    post:
-      consumes:
-      - application/json
-      description: Accepts a new intake job request and processes it.
-      parameters:
-      - description: Intake Job Request Payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Job Created
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Create Intake Job
-      tags:
-      - intake
-    put:
-      consumes:
-      - application/json
-      description: Accepts an update request for an existing intake job and processes
-        it.
-      parameters:
-      - description: Intake Job Update Payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job Updated
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Update Intake Job
-      tags:
-      - intake
-  /intake/job/{id}:
-    delete:
-      description: Deletes an existing intake job by its ID.
-      parameters:
-      - description: Intake Job ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job Deleted
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Delete Intake Job
-      tags:
-      - intake
-    get:
-      description: Retrieves an existing intake job by its ID.
-      parameters:
-      - description: Intake Job ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job Retrieved
-          schema:
-            $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get Intake Job
-      tags:
-      - intake
-  /intake/jobs:
-    get:
-      description: Retrieves all existing intake jobs.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Jobs Retrieved
-          schema:
-            items:
-              $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get All Intake Jobs
-      tags:
-      - intake
-  /intake/jobs/queue:
-    post:
-      consumes:
-      - application/json
-      description: Queues all the active intake jobs for processing.
-      parameters:
-      - description: Queue Jobs Request Payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/orchestrator_internal_models.IntakeJobDefinition'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Jobs Queued
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Queue Active Intake Jobs
-      tags:
-      - intake
-  /intake/jobs/status:
-    get:
-      description: Retrieves the status of all intake jobs.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Job Statuses Retrieved
-          schema:
-            items:
-              $ref: '#/definitions/orchestrator_internal_models.JobStatus'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get Intake Job Statuses
-      tags:
-      - intake
 swagger: "2.0"

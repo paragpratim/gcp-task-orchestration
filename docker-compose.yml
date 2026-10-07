@@ -25,7 +25,7 @@ services:
       - -port
       - "8123"
       - -initial-queue
-      - "projects/local-project/locations/europe-west1/queues/orchestrator-intake-queue-local"
+      - "projects/local-project/locations/europe-west1/queues/orchestrator-admin-queue-local"
       - -initial-queue
       - "projects/local-project/locations/europe-west1/queues/orchestrator-gcs-queue-local"
       - -initial-queue

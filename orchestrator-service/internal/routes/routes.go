@@ -4,16 +4,16 @@ package routes
 const APIPrefix = "/api/v1"
 
 const (
-	// --- Intake endpoints ---
+	// --- Admin endpoints ---
 
-	IntakeHealth     = "/intake/health"
-	IntakeJobCreate  = "/intake/job"
-	IntakeJobGet     = "/intake/job/:id"
-	IntakeJobGetAll  = "/intake/jobs"
-	IntakeJobUpdate  = "/intake/job"
-	IntakeJobDelete  = "/intake/job/:id"
-	IntakeJobsQueue  = "/intake/jobs/queue"
-	IntakeJobsStatus = "/intake/jobs/status"
+	AdminHealth     = "/admin/health"
+	AdminJobCreate  = "/admin/job"
+	AdminJobGet     = "/admin/job/:id"
+	AdminJobGetAll  = "/admin/jobs"
+	AdminJobUpdate  = "/admin/job"
+	AdminJobDelete  = "/admin/job/:id"
+	AdminJobsQueue  = "/admin/jobs/queue"
+	AdminJobsStatus = "/admin/jobs/status"
 
 	// --- GCS endpoints ---
 

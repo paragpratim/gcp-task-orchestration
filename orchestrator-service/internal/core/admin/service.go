@@ -1,4 +1,4 @@
-package intake
+package admin
 
 import (
 	"encoding/json"
@@ -13,23 +13,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Config holds the configuration for the intake service.
+// Config holds the configuration for the admin service.
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
-	IntakeQueueName  string
+	AdminQueueName   string
 }
 
-// Service provides methods to manage intake jobs and their statuses.
+// Service provides methods to manage admin jobs and their statuses.
 type Service struct {
-	jobsRepo      gcp.DocumentRepository[models.IntakeJobDefinition]
+	jobsRepo      gcp.DocumentRepository[models.JobDefinition]
 	statusRepo    gcp.DocumentRepository[models.JobStatus]
 	taskQueueRepo gcp.TaskRepository
 	cfg           Config
 }
 
-// NewService creates a new instance of the intake Service with the provided repositories and configuration.
-func NewService(jobsRepo gcp.DocumentRepository[models.IntakeJobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, cfg Config) *Service {
+// NewService creates a new instance of the admin Service with the provided repositories and configuration.
+func NewService(jobsRepo gcp.DocumentRepository[models.JobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:      jobsRepo,
 		statusRepo:    statusRepo,
@@ -44,8 +44,8 @@ func (s *Service) HealthCheck(ctx *gin.Context) error {
 	return nil
 }
 
-// CreateIntakeJob validates and persists a new intake job definition.
-func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
+// CreateJob validates and persists a new admin job definition.
+func (s *Service) CreateJob(ctx *gin.Context, jobDefinition models.JobDefinition) (*models.JobDefinition, error) {
 	if err := jobDefinition.Source.Validate(); err != nil {
 		return nil, err
 	}
@@ -56,43 +56,43 @@ func (s *Service) CreateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 
 	result, err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, "", jobDefinition)
 	if err != nil {
-		return nil, fmt.Errorf("failed to persist initial intake state: %w", err)
+		return nil, fmt.Errorf("failed to persist initial admin state: %w", err)
 	}
 	return result, nil
 }
 
-// GetIntakeJob retrieves an intake job definition by its ID from the repository.
-func (s *Service) GetIntakeJob(ctx *gin.Context, id string) (*models.IntakeJobDefinition, error) {
-	intakeJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
+// GetJob retrieves an admin job definition by its ID from the repository.
+func (s *Service) GetJob(ctx *gin.Context, id string) (*models.JobDefinition, error) {
+	job, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve intake job: %w", err)
+		return nil, fmt.Errorf("failed to retrieve admin job: %w", err)
 	}
-	if intakeJob == nil {
-		return nil, fmt.Errorf("intake job with id %s not found", id)
+	if job == nil {
+		return nil, fmt.Errorf("admin job with id %s not found", id)
 	}
-	return intakeJob, nil
+	return job, nil
 }
 
-// GetAllIntakeJobs retrieves all intake job definitions from the repository.
-func (s *Service) GetAllIntakeJobs(ctx *gin.Context) (*[]models.IntakeJobDefinition, error) {
+// GetAllJobs retrieves all admin job definitions from the repository.
+func (s *Service) GetAllJobs(ctx *gin.Context) (*[]models.JobDefinition, error) {
 	allJobs, err := s.jobsRepo.GetAll(ctx, s.cfg.JobsCollection)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve all intake jobs: %w", err)
+		return nil, fmt.Errorf("failed to retrieve all admin jobs: %w", err)
 	}
 	return allJobs, nil
 }
 
-// GetAllJobStatuses retrieves all intake job statuses from the repository.
+// GetAllJobStatuses retrieves all admin job statuses from the repository.
 func (s *Service) GetAllJobStatuses(ctx *gin.Context) (*[]models.JobStatus, error) {
 	allJobStatuses, err := s.statusRepo.GetAll(ctx, s.cfg.StatusCollection)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve all intake job statuses: %w", err)
+		return nil, fmt.Errorf("failed to retrieve all admin job statuses: %w", err)
 	}
 	return allJobStatuses, nil
 }
 
-// UpdateIntakeJob validates and updates an existing intake job definition.
-func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*models.IntakeJobDefinition, error) {
+// UpdateJob validates and updates an existing admin job definition.
+func (s *Service) UpdateJob(ctx *gin.Context, jobDefinition models.JobDefinition) (*models.JobDefinition, error) {
 	if err := jobDefinition.Source.Validate(); err != nil {
 		return nil, err
 	}
@@ -114,14 +114,14 @@ func (s *Service) UpdateIntakeJob(ctx *gin.Context, jobDefinition models.IntakeJ
 
 	result, err := s.jobsRepo.Put(ctx, s.cfg.JobsCollection, jobDefinition.ID, jobDefinition)
 	if err != nil {
-		return nil, fmt.Errorf("failed to overwrite persistent intake state: %w", err)
+		return nil, fmt.Errorf("failed to overwrite persistent admin state: %w", err)
 	}
 
 	return result, nil
 }
 
-// DeleteIntakeJob removes an existing intake job by its ID.
-func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
+// DeleteJob removes an existing admin job by its ID.
+func (s *Service) DeleteJob(ctx *gin.Context, id string) error {
 
 	existingJob, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, id)
 	if err != nil {
@@ -133,15 +133,15 @@ func (s *Service) DeleteIntakeJob(ctx *gin.Context, id string) error {
 
 	err = s.jobsRepo.Delete(ctx, s.cfg.JobsCollection, id)
 	if err != nil {
-		return fmt.Errorf("failed to completely purge intake job record: %w", err)
+		return fmt.Errorf("failed to completely purge admin job record: %w", err)
 	}
 
 	return nil
 }
 
-// QueueActiveJobs retrieves and queues active intake jobs for processing, returning their statuses.
-func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJobDefinition) (*[]models.JobStatus, error) {
-	var jobsToQueue []models.IntakeJobDefinition
+// QueueActiveJobs retrieves and queues active admin jobs for processing, returning their statuses.
+func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.JobDefinition) (*[]models.JobStatus, error) {
+	var jobsToQueue []models.JobDefinition
 	var jobStatuses []models.JobStatus
 
 	if jobDefinition.ID != "" {
@@ -191,7 +191,7 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.IntakeJ
 		}
 
 		// Queue the task in Cloud Tasks with the specified method, route, and payload
-		err = s.taskQueueRepo.Put(ctx, s.cfg.IntakeQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), payloadBytes, 0)
+		err = s.taskQueueRepo.Put(ctx, s.cfg.AdminQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), payloadBytes, 0)
 		if err != nil {
 			return nil, fmt.Errorf("queue execution aborted at task dispatch phase for job %s: %w", job.ID, err)
 		}

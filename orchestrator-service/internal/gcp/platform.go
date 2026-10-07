@@ -10,7 +10,7 @@ import (
 // Platform is a struct that holds references to various GCP repositories used in the orchestrator.
 type Platform struct {
 	Firestore  *FirestoreRepository[any]
-	IntakeJobs *FirestoreRepository[models.IntakeJobDefinition]
+	Jobs       *FirestoreRepository[models.JobDefinition]
 	JobStatus  *FirestoreRepository[models.JobStatus]
 	CloudTasks *CloudTasksRepository
 	Storage    *StorageRepository
@@ -22,14 +22,14 @@ func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseU
 	// Initialize Firestore repository
 	fsRepo, err := NewFirestoreRepository[any](ctx, env, projectID, firestoreDB)
 	if err != nil {
-		return nil, fmt.Errorf("failed firestore intake: %w", err)
+		return nil, fmt.Errorf("failed firestore admin: %w", err)
 	}
 
 	// Initialize Cloud Tasks repository
 	tasksRepo, err := NewCloudTasksRepository(ctx, env, projectID, region, baseURL, saEmail)
 	if err != nil {
 		_ = fsRepo.Close()
-		return nil, fmt.Errorf("failed tasks intake: %w", err)
+		return nil, fmt.Errorf("failed tasks admin: %w", err)
 	}
 
 	// Initialize Storage repository
@@ -37,7 +37,7 @@ func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseU
 	if err != nil {
 		_ = fsRepo.Close()
 		_ = tasksRepo.Close()
-		return nil, fmt.Errorf("failed storage intake: %w", err)
+		return nil, fmt.Errorf("failed storage admin: %w", err)
 	}
 
 	// Initialize BigQuery repository
@@ -46,12 +46,12 @@ func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseU
 		_ = fsRepo.Close()
 		_ = tasksRepo.Close()
 		_ = gcsRepo.Close()
-		return nil, fmt.Errorf("failed BigQuery intake: %w", err)
+		return nil, fmt.Errorf("failed BigQuery admin: %w", err)
 	}
 
 	return &Platform{
 		Firestore:  fsRepo,
-		IntakeJobs: NewTypedFirestoreRepository[models.IntakeJobDefinition](fsRepo.firestoreClient),
+		Jobs:       NewTypedFirestoreRepository[models.JobDefinition](fsRepo.firestoreClient),
 		JobStatus:  NewTypedFirestoreRepository[models.JobStatus](fsRepo.firestoreClient),
 		CloudTasks: tasksRepo,
 		Storage:    gcsRepo,

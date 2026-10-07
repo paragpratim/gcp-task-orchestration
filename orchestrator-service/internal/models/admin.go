@@ -64,8 +64,8 @@ type TargetDefinition struct {
 	TableName string `json:"table_name" firestore:"table_name"`
 }
 
-// IntakeJobDefinition is the Firestore-backed model used to persist intake job metadata.
-type IntakeJobDefinition struct {
+// JobDefinition is the Firestore-backed model used to persist admin job metadata.
+type JobDefinition struct {
 	ID          string           `json:"id" firestore:"id"`
 	Name        string           `json:"name" firestore:"name"`
 	Description string           `json:"description,omitempty" firestore:"description,omitempty"`

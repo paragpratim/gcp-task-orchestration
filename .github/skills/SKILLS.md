@@ -10,7 +10,7 @@ The Golang service is located in the `orchestrator-service/` directory and follo
 - **`internal/gcp/`**: A single, flat infrastructure package containing our raw cloud provider SDK drivers (`firestore.go`, `cloudtasks.go`, `storage.go`, `bigquery.go`). 
   - All structs must use explicit resource naming instead of generic terms (e.g., `FirestoreRepository[T]`, `CloudTasksRepository`).
   - To prevent memory and connection pool leaks, these MUST be instantiated once at boot time as singletons via `gcp.NewPlatform` and closed cleanly via `infra.Close()` during teardown.
-- **`internal/core/`**: Contains our business domain modules (`intake`, `gcs`, `bigquery`, `dataflow`). Each feature is completely encapsulated within its own dedicated directory.
+- **`internal/core/`**: Contains our business domain modules (`admin`, `gcs`, `bigquery`, `dataflow`). Each feature is completely encapsulated within its own dedicated directory.
   - **`service.go`**: Contains pure business logic. It interacts *only* with infrastructure repositories passed into its constructor via dependency injection. It must remain completely decoupled from HTTP/Gin context signatures, instead accepting standard `context.Context` parameters.
   - **`handlers.go`**: Contains the HTTP handler structs and methods. Handlers are strictly focused on incoming request validation, optionally binding the payload to models, calling the underlying business service method, and formatting the response (e.g., `c.JSON`). Handlers MUST NOT contain any business logic or decision-making workflows. Each handler package must expose a `RegisterRoutes(rg *gin.RouterGroup)` method to self-register its endpoint tree paths.
 - **`internal/api/router.go`**: The central factory gateway. It receives the `*gcp.Platform` infrastructure singleton, instantiates the business domain services and handlers sequentially in one location, and mounts them to their respective API version groups.
@@ -34,15 +34,15 @@ When creating or updating a route handler method inside a feature's `handlers.go
 // HandleStart handles the initial workflow ingestion.
 // @Summary      Start Ingestion Workflow
 // @Description  Accepts the onboarding request metadata and schedules async task pipelines.
-// @Tags         intake
+// @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        request  body      intake.IntakeRequest  true  "Intake Request Payload"
+// @Param        request  body      admin.AdminRequest  true  "Admin Request Payload"
 // @Success      202      {object}  map[string]string "Status Accepted"
 // @Failure      400      {object}  map[string]string "Bad Request"
-// @Router       /api/v1/intake/start [post]
+// @Router       /api/v1/admin/start [post]
 func (h *Handler) HandleStart(c *gin.Context) {
-    var req IntakeRequest
+    var req AdminRequest
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
@@ -50,7 +50,7 @@ func (h *Handler) HandleStart(c *gin.Context) {
     
     // Execute business service logic...
     
-    c.JSON(http.StatusAccepted, gin.H{"status": "INTAKE_ACCEPTED"})
+    c.JSON(http.StatusAccepted, gin.H{"status": "ADMIN_ACCEPTED"})
 }
 ```
 

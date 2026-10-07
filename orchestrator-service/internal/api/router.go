@@ -2,10 +2,10 @@ package api
 
 import (
 	"orchestrator/internal/config"
+	"orchestrator/internal/core/admin"
 	"orchestrator/internal/core/bigquery"
 	"orchestrator/internal/core/dataflow"
 	"orchestrator/internal/core/gcs"
-	"orchestrator/internal/core/intake"
 	"orchestrator/internal/gcp"
 	"orchestrator/internal/routes"
 
@@ -18,7 +18,7 @@ import (
 // global telemetry hooks, and explicit visual Swagger UI documentation.
 //
 // It compiles and cross-injects infrastructure tiers down into individual
-// feature controllers (Intake, GCS, BigQuery, Dataflow) using pure, compile-safe
+// feature controllers (Admin, GCS, BigQuery, Dataflow) using pure, compile-safe
 // constructor dependency injection.
 func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	router := gin.New()
@@ -42,19 +42,19 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	})
 
 	// Initialize feature handlers with their respective services and configurations
-	initHandler := intake.NewHandler(intake.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, intake.Config{
+	initHandler := admin.NewHandler(admin.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, admin.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
-		IntakeQueueName:  appCfg.IntakeQueueName,
+		AdminQueueName:   appCfg.AdminQueueName,
 	}))
-	gcsHandler := gcs.NewHandler(gcs.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, infra.Storage, gcs.Config{
+	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, infra.Storage, gcs.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
 		GcsQueueName:     appCfg.GcsQueueName,
 		BqQueueName:      appCfg.BqQueueName,
-		IntakeQueueName:  appCfg.IntakeQueueName,
+		AdminQueueName:   appCfg.AdminQueueName,
 	}))
-	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.IntakeJobs, infra.JobStatus, infra.CloudTasks, infra.BigQuery, bigquery.Config{
+	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, infra.BigQuery, bigquery.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
 		GcsQueueName:     appCfg.GcsQueueName,

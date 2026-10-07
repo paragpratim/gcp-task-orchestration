@@ -21,9 +21,9 @@ type AppConfig struct {
 	JobsCollection      string `json:"jobs_collection"`
 	JobStatusCollection string `json:"job_status_collection"`
 	// Task queue configuration
-	IntakeQueueName string `json:"intake_queue_name"`
-	GcsQueueName    string `json:"gcs_queue_name"`
-	BqQueueName     string `json:"bq_queue_name"`
+	AdminQueueName string `json:"admin_queue_name"`
+	GcsQueueName   string `json:"gcs_queue_name"`
+	BqQueueName    string `json:"bq_queue_name"`
 }
 
 // LoadConfig loads the application configuration from environment variables.
@@ -39,9 +39,9 @@ func LoadConfig() *AppConfig {
 		FirestoreDB:         getEnv("FIRESTORE_DB", "(default)"),
 		BaseURL:             getEnv("QUEUE_BASE_URL", "http://orchestrator:8080"),
 		ServiceAccountEmail: getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),
-		JobsCollection:      fmt.Sprintf("%s_intake_jobs", env),
-		JobStatusCollection: fmt.Sprintf("%s_intake_job_status", env),
-		IntakeQueueName:     fmt.Sprintf("orchestrator-intake-queue-%s", env),
+		JobsCollection:      fmt.Sprintf("%s_jobs", env),
+		JobStatusCollection: fmt.Sprintf("%s_job_status", env),
+		AdminQueueName:      fmt.Sprintf("orchestrator-admin-queue-%s", env),
 		GcsQueueName:        fmt.Sprintf("orchestrator-gcs-queue-%s", env),
 		BqQueueName:         fmt.Sprintf("orchestrator-bq-queue-%s", env),
 	}

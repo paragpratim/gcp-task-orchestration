@@ -39,7 +39,7 @@ spec:
               memory: "512Mi"
           startupProbe:
             httpGet:
-              path: /api/v1/intake/health
+              path: /api/v1/admin/health
               port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 10
@@ -47,7 +47,7 @@ spec:
             failureThreshold: 10
           livenessProbe:
             httpGet:
-              path: /api/v1/intake/health
+              path: /api/v1/admin/health
               port: 8080
             initialDelaySeconds: 45
             timeoutSeconds: 10

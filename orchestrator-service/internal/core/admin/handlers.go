@@ -1,4 +1,4 @@
-package intake
+package admin
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler 	 Handles HTTP requests for intake job operations.
+// Handler 	 Handles HTTP requests for admin job operations.
 type Handler struct {
 	service *Service
 }
@@ -22,21 +22,21 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// RegisterRoutes 	 Registers the intake job routes with the provided Gin router group.
+// RegisterRoutes 	 Registers the admin job routes with the provided Gin router group.
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
-	rg.GET(routes.IntakeHealth, h.appHealth)
-	rg.POST(routes.IntakeJobCreate, h.createJob)
-	rg.GET(routes.IntakeJobGet, h.getJob)
-	rg.GET(routes.IntakeJobGetAll, h.getAllJobs)
-	rg.GET(routes.IntakeJobsStatus, h.getJobStatus)
-	rg.PUT(routes.IntakeJobUpdate, h.updateJob)
-	rg.DELETE(routes.IntakeJobDelete, h.deleteJob)
-	rg.POST(routes.IntakeJobsQueue, h.queueJobs)
+	rg.GET(routes.AdminHealth, h.appHealth)
+	rg.POST(routes.AdminJobCreate, h.createJob)
+	rg.GET(routes.AdminJobGet, h.getJob)
+	rg.GET(routes.AdminJobGetAll, h.getAllJobs)
+	rg.GET(routes.AdminJobsStatus, h.getJobStatus)
+	rg.PUT(routes.AdminJobUpdate, h.updateJob)
+	rg.DELETE(routes.AdminJobDelete, h.deleteJob)
+	rg.POST(routes.AdminJobsQueue, h.queueJobs)
 }
 
-// handleJob 	 A generic handler for intake job operations that processes the request and executes the provided action.
-func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gin.Context, req models.IntakeJobDefinition) (any, error)) {
-	var req models.IntakeJobDefinition
+// handleJob 	 A generic handler for admin job operations that processes the request and executes the provided action.
+func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gin.Context, req models.JobDefinition) (any, error)) {
+	var req models.JobDefinition
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("Failed to bind JSON payload", "ERROR", err)
@@ -60,7 +60,7 @@ func (h *Handler) handleJob(c *gin.Context, successStatus int, action func(c *gi
 // @Tags         health
 // @Produce      plain
 // @Success      200  {string}  string  "OK"
-// @Router       /intake/health [get]
+// @Router       /admin/health [get]
 func (h *Handler) appHealth(c *gin.Context) {
 	err := h.service.HealthCheck(c)
 	if err != nil {
@@ -71,31 +71,31 @@ func (h *Handler) appHealth(c *gin.Context) {
 	c.String(http.StatusOK, "OK")
 }
 
-// createJob 	 Handles the creation of a new intake job.
-// @Summary      Create Intake Job
-// @Description  Accepts a new intake job request and processes it.
-// @Tags         intake
+// createJob 	 Handles the creation of a new admin job.
+// @Summary      Create Job
+// @Description  Accepts a new admin job request and processes it.
+// @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Request Payload"
+// @Param        request  body      models.JobDefinition  true  "Job Request Payload"
 // @Success      201  {object}  map[string]string "Job Created"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/job [post]
+// @Router       /admin/job [post]
 func (h *Handler) createJob(c *gin.Context) {
-	h.handleJob(c, http.StatusCreated, func(c *gin.Context, req models.IntakeJobDefinition) (any, error) {
-		return h.service.CreateIntakeJob(c, req)
+	h.handleJob(c, http.StatusCreated, func(c *gin.Context, req models.JobDefinition) (any, error) {
+		return h.service.CreateJob(c, req)
 	})
 }
 
-// handleJobGet 	 Handles the retrieval of a specific intake job by its ID.
-// @Summary      Get Intake Job
-// @Description  Retrieves an existing intake job by its ID.
-// @Tags         intake
+// handleJobGet 	 Handles the retrieval of a specific admin job by its ID.
+// @Summary      Get Job
+// @Description  Retrieves an existing admin job by its ID.
+// @Tags         admin
 // @Produce      json
-// @Param        id   path      string  true  "Intake Job ID"
-// @Success      200  {object}  models.IntakeJobDefinition "Job Retrieved"
+// @Param        id   path      string  true  "Job ID"
+// @Success      200  {object}  models.JobDefinition "Job Retrieved"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/job/{id} [get]
+// @Router       /admin/job/{id} [get]
 func (h *Handler) getJob(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -104,7 +104,7 @@ func (h *Handler) getJob(c *gin.Context) {
 		return
 	}
 
-	job, err := h.service.GetIntakeJob(c, id)
+	job, err := h.service.GetJob(c, id)
 	if err != nil {
 		logger.Error("Job retrieval failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -114,16 +114,16 @@ func (h *Handler) getJob(c *gin.Context) {
 	c.JSON(http.StatusOK, job)
 }
 
-// handleJobGetAll 	 Handles the retrieval of all intake jobs.
-// @Summary      Get All Intake Jobs
-// @Description  Retrieves all existing intake jobs.
-// @Tags         intake
+// handleJobGetAll 	 Handles the retrieval of all admin jobs.
+// @Summary      Get All Jobs
+// @Description  Retrieves all existing admin jobs.
+// @Tags         admin
 // @Produce      json
-// @Success      200  {array}   models.IntakeJobDefinition "Jobs Retrieved"
+// @Success      200  {array}   models.JobDefinition "Jobs Retrieved"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/jobs [get]
+// @Router       /admin/jobs [get]
 func (h *Handler) getAllJobs(c *gin.Context) {
-	jobs, err := h.service.GetAllIntakeJobs(c)
+	jobs, err := h.service.GetAllJobs(c)
 	if err != nil {
 		logger.Error("Jobs retrieval failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -133,31 +133,31 @@ func (h *Handler) getAllJobs(c *gin.Context) {
 	c.JSON(http.StatusOK, jobs)
 }
 
-// updateJob 	 Handles the update of an existing intake job.
-// @Summary      Update Intake Job
-// @Description  Accepts an update request for an existing intake job and processes it.
-// @Tags         intake
+// updateJob 	 Handles the update of an existing admin job.
+// @Summary      Update Job
+// @Description  Accepts an update request for an existing admin job and processes it.
+// @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        request  body      models.IntakeJobDefinition  true  "Intake Job Update Payload"
+// @Param        request  body      models.JobDefinition  true  "Job Update Payload"
 // @Success      200  {object}  map[string]string "Job Updated"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/job [put]
+// @Router       /admin/job [put]
 func (h *Handler) updateJob(c *gin.Context) {
-	h.handleJob(c, http.StatusOK, func(c *gin.Context, req models.IntakeJobDefinition) (any, error) {
-		return h.service.UpdateIntakeJob(c, req)
+	h.handleJob(c, http.StatusOK, func(c *gin.Context, req models.JobDefinition) (any, error) {
+		return h.service.UpdateJob(c, req)
 	})
 }
 
-// deleteJob 	 Handles the deletion of an existing intake job.
-// @Summary      Delete Intake Job
-// @Description  Deletes an existing intake job by its ID.
-// @Tags         intake
+// deleteJob 	 Handles the deletion of an existing admin job.
+// @Summary      Delete Job
+// @Description  Deletes an existing admin job by its ID.
+// @Tags         admin
 // @Produce      json
-// @Param        id   path      string  true  "Intake Job ID"
+// @Param        id   path      string  true  "Job ID"
 // @Success      200  {object}  map[string]string "Job Deleted"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/job/{id} [delete]
+// @Router       /admin/job/{id} [delete]
 func (h *Handler) deleteJob(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -166,7 +166,7 @@ func (h *Handler) deleteJob(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteIntakeJob(c, id); err != nil {
+	if err := h.service.DeleteJob(c, id); err != nil {
 		logger.Error("Job deletion failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -175,18 +175,18 @@ func (h *Handler) deleteJob(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "Job Deleted", "id": id})
 }
 
-// queueJobs 	 Queues all the active intake jobs.
-// @Summary      Queue Active Intake Jobs
-// @Description  Queues all the active intake jobs for processing.
-// @Tags         intake
+// queueJobs 	 Queues all the active admin jobs.
+// @Summary      Queue Active Jobs
+// @Description  Queues all the active admin jobs for processing.
+// @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        request  body      models.IntakeJobDefinition  true  "Queue Jobs Request Payload"
+// @Param        request  body      models.JobDefinition  true  "Queue Jobs Request Payload"
 // @Success      200  {object}  map[string]string "Jobs Queued"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/jobs/queue [post]
+// @Router       /admin/jobs/queue [post]
 func (h *Handler) queueJobs(c *gin.Context) {
-	var req models.IntakeJobDefinition
+	var req models.JobDefinition
 
 	// Read the raw body bytes directly
 	bodyBytes, err := io.ReadAll(c.Request.Body)
@@ -217,14 +217,14 @@ func (h *Handler) queueJobs(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// getJobStatus 	 Handles the retrieval of the status of all intake jobs.
-// @Summary      Get Intake Job Statuses
-// @Description  Retrieves the status of all intake jobs.
-// @Tags         intake
+// getJobStatus 	 Handles the retrieval of the status of all admin jobs.
+// @Summary      Get Job Statuses
+// @Description  Retrieves the status of all admin jobs.
+// @Tags         admin
 // @Produce      json
 // @Success      200  {array}   models.JobStatus "Job Statuses Retrieved"
 // @Failure      400  {object}  map[string]string "Bad Request"
-// @Router       /intake/jobs/status [get]
+// @Router       /admin/jobs/status [get]
 func (h *Handler) getJobStatus(c *gin.Context) {
 	statuses, err := h.service.GetAllJobStatuses(c)
 	if err != nil {

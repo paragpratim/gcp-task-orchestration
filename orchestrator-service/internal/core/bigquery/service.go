@@ -24,7 +24,7 @@ type Config struct {
 
 // Service encapsulates the logic for managing BigQuery load jobs within the orchestrator pipeline.
 type Service struct {
-	jobsRepo     gcp.DocumentRepository[models.IntakeJobDefinition]
+	jobsRepo     gcp.DocumentRepository[models.JobDefinition]
 	statusRepo   gcp.DocumentRepository[models.JobStatus]
 	tasksRepo    gcp.TaskRepository
 	bigQueryRepo gcp.DataRepository
@@ -32,7 +32,7 @@ type Service struct {
 }
 
 // NewService creates a new instance of the BigQuery service with the provided repositories and configuration.
-func NewService(jobs gcp.DocumentRepository[models.IntakeJobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, bigQueryRepo gcp.DataRepository, cfg Config) *Service {
+func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, bigQueryRepo gcp.DataRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:     jobs,
 		statusRepo:   status,
