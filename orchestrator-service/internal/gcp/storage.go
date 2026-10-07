@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
@@ -47,16 +48,23 @@ func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, 
 // ListObjects retrieves a list of object names from the specified bucket that match the given prefix and file pattern.
 // Only returns objects in the immediate directory, not subdirectories.
 // Prefix and filePattern can be blank.
-// NOTE: The prefix must not start with a leading slash, as GCS object names do not have leading slashes.
+// Prefix may have leading/trailing slashes; they are stripped automatically.
 func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string, filePattern string) ([]string, error) {
 	var objects []string
+
+	// Normalize prefix: strip leading and trailing slashes
+	prefix = strings.Trim(prefix, "/")
 
 	// Build the MatchGlob pattern
 	// GCS MatchGlob must include the full path from bucket root, not just the filename
 	// Wildcard * does not match / characters, so it only matches within the immediate directory
 	matchGlob := ""
 	if filePattern != "" {
-		matchGlob = prefix + filePattern
+		if prefix != "" {
+			matchGlob = prefix + "/" + filePattern
+		} else {
+			matchGlob = filePattern
+		}
 	}
 
 	// Create an object query filter targeting the folder/prefix path and applying the file pattern for matching
