@@ -47,6 +47,7 @@ func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, 
 // ListObjects retrieves a list of object names from the specified bucket that match the given prefix and file pattern.
 // Only returns objects in the immediate directory, not subdirectories.
 // Prefix and filePattern can be blank.
+// NOTE: The prefix must not start with a leading slash, as GCS object names do not have leading slashes.
 func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string, filePattern string) ([]string, error) {
 	var objects []string
 
