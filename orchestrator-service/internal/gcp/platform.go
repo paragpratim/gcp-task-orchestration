@@ -41,7 +41,7 @@ func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseU
 	}
 
 	// Initialize BigQuery repository
-	bqRepo, err := NewBigQueryRepository(ctx, env, projectID)
+	bqRepo, err := NewBigQueryRepository(ctx, env, projectID, region)
 	if err != nil {
 		_ = fsRepo.Close()
 		_ = tasksRepo.Close()

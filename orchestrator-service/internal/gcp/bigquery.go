@@ -21,10 +21,11 @@ type DataRepository interface {
 type BigQueryRepository struct {
 	bqClient  *bigquery.Client
 	projectID string
+	region    string
 }
 
 // NewBigQueryRepository creates a new instance of BigQueryRepository.
-func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*BigQueryRepository, error) {
+func NewBigQueryRepository(ctx context.Context, env string, projectID string, region string) (*BigQueryRepository, error) {
 	// Local Client without ADC
 	if env == "local" {
 		client, err := bigquery.NewClient(ctx, projectID, option.WithoutAuthentication())
@@ -34,6 +35,7 @@ func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*
 		return &BigQueryRepository{
 			bqClient:  client,
 			projectID: projectID,
+			region:    region,
 		}, nil
 	}
 
@@ -44,6 +46,7 @@ func NewBigQueryRepository(ctx context.Context, env string, projectID string) (*
 	return &BigQueryRepository{
 		bqClient:  client,
 		projectID: projectID,
+		region:    region,
 	}, nil
 }
 
@@ -67,7 +70,7 @@ func (r *BigQueryRepository) CreateGCSLoadJob(ctx context.Context, datasetID, ta
 
 // CheckJobStatus polls the current execution and error state of an active or finished job.
 func (r *BigQueryRepository) CheckJobStatus(ctx context.Context, jobID string) (*bigquery.JobStatus, error) {
-	job, err := r.bqClient.JobFromID(ctx, jobID)
+	job, err := r.bqClient.JobFromIDLocation(ctx, jobID, r.region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch BigQuery job instance for ID %s: %w", jobID, err)
 	}
