@@ -45,11 +45,25 @@ func NewStorageRepository(ctx context.Context, env string) (*StorageRepository, 
 }
 
 // ListObjects retrieves a list of object names from the specified bucket that match the given prefix and file pattern.
+// Only returns objects in the immediate directory, not subdirectories.
+// Prefix and filePattern can be blank.
 func (r *StorageRepository) ListObjects(ctx context.Context, bucketName, prefix string, filePattern string) ([]string, error) {
 	var objects []string
 
+	// Build the MatchGlob pattern
+	// GCS MatchGlob must include the full path from bucket root, not just the filename
+	// Wildcard * does not match / characters, so it only matches within the immediate directory
+	matchGlob := ""
+	if filePattern != "" {
+		matchGlob = prefix + filePattern
+	}
+
 	// Create an object query filter targeting the folder/prefix path and applying the file pattern for matching
-	query := &storage.Query{Prefix: prefix, Delimiter: "/", MatchGlob: filePattern}
+	query := &storage.Query{
+		Prefix:    prefix,
+		Delimiter: "/",
+		MatchGlob: matchGlob,
+	}
 	it := r.storageClient.Bucket(bucketName).Objects(ctx, query)
 
 	for {
