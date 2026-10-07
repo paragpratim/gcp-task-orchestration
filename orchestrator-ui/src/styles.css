@@ -188,46 +188,59 @@ pre {
   color: #fff;
 }
 
-.monitor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 18px;
+.monitor-table-wrapper {
   margin-top: 12px;
+  overflow-x: auto;
 }
 
-.job-card {
+.monitor-table {
+  width: 100%;
+  border-collapse: collapse;
   background: #fff;
   border: 1px solid #dfeefb;
   border-radius: 12px;
-  padding: 18px;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.04);
 }
 
-.job-card-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+.monitor-table th,
+.monitor-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf5ff;
+  text-align: left;
+  vertical-align: top;
 }
 
-.job-card h4 {
-  margin: 0;
-}
-
-.job-id {
-  font-size: 0.8rem;
+.monitor-table thead th {
+  background: #f4f9ff;
+  color: #0d47a1;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #1976d2;
-  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.job-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 16px 0;
-  color: #567;
-  font-size: 0.9rem;
+.monitor-table tbody tr:nth-child(even) {
+  background: #fafcff;
+}
+
+.monitor-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.monitor-table td {
+  color: #234;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.status-cell {
+  white-space: nowrap;
+}
+
+.message-cell {
+  max-width: 260px;
+  word-break: break-word;
 }
 
 .status-badge {
@@ -258,28 +271,6 @@ pre {
 .status-queued {
   background: #e3f2fd;
   color: #1565c0;
-}
-
-.progress-block {
-  margin-top: 10px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: #1976d2;
-  margin-bottom: 8px;
-}
-
-.message-box {
-  background: #e3f2fd;
-  border: 1px solid #bbdefb;
-  color: #234;
-  border-radius: 8px;
-  padding: 10px 12px;
-  line-height: 1.5;
-  word-break: break-word;
 }
 
 .progress-bar {

@@ -23,17 +23,36 @@ function MonitorJobs() {
   const [loading, setLoading] = useState(false);
 
   const loadJobs = async () => {
-    const apiUrl = API_CONFIG.ENDPOINTS.JOB_STATUS;
+    const statusApiUrl = API_CONFIG.ENDPOINTS.JOB_STATUS;
+    const jobsApiUrl = API_CONFIG.ENDPOINTS.JOBS;
     setLoading(true);
 
     try {
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+      const [statusResponse, jobsResponse] = await Promise.all([
+        fetch(statusApiUrl),
+        fetch(jobsApiUrl),
+      ]);
+
+      if (!statusResponse.ok || !jobsResponse.ok) {
+        throw new Error("Request failed while loading jobs.");
       }
 
-      const data = await response.json();
-      setJobs(Array.isArray(data) ? data : []);
+      const statusData = await statusResponse.json();
+      const jobsData = await jobsResponse.json();
+      const jobsById = new Map((Array.isArray(jobsData) ? jobsData : []).map((job) => [job.id || job.ID, job]));
+
+      const mergedJobs = (Array.isArray(statusData) ? statusData : []).map((job) => {
+        const jobId = job.job_id || job.JobID || job.id || job.ID;
+        const jobDefinition = jobsById.get(jobId) || {};
+
+        return {
+          ...job,
+          source: job.source || job.Source || jobDefinition.source || jobDefinition.Source || {},
+          target: job.target || job.Target || jobDefinition.target || jobDefinition.Target || {},
+        };
+      });
+
+      setJobs(mergedJobs);
     } catch (error) {
       console.error("Unable to fetch jobs:", error);
       setJobs([]);
@@ -67,8 +86,53 @@ function MonitorJobs() {
     if (activeFilter === "All") {
       return jobs;
     }
-    return jobs.filter((job) => job.status === activeFilter);
+    return jobs.filter((job) => (job.status || job.Status) === activeFilter);
   }, [jobs, activeFilter]);
+
+  const formatSource = (job) => {
+    const source = job?.source ?? job?.Source ?? {};
+    const bucketName = source.bucket_name || source.bucketName || "";
+    const prefix = source.prefix || "";
+    const filePattern = source.file_pattern || source.filePattern || "";
+
+    if (!bucketName && !prefix && !filePattern) {
+      return "N/A";
+    }
+
+    const cleanPrefix = prefix.replace(/^\/+|\/+$/g, "");
+    const cleanPattern = filePattern.replace(/^\/+|\/+$/g, "");
+
+    let value = "";
+    if (bucketName) {
+      value = `gs://${bucketName}`;
+    }
+    if (cleanPrefix) {
+      value = value ? `${value}/${cleanPrefix}` : `/${cleanPrefix}`;
+    }
+    if (cleanPattern) {
+      value = value ? `${value}/${cleanPattern}` : `/${cleanPattern}`;
+    }
+
+    return value || "N/A";
+  };
+
+  const formatTarget = (job) => {
+    const target = job?.target ?? job?.Target ?? {};
+    const projectId = target.project_id || target.projectId || "";
+    const datasetId = target.dataset_id || target.datasetId || "";
+    const tableName = target.table_name || target.tableName || "";
+
+    const targetValue = [projectId, datasetId, tableName].filter(Boolean).join(".");
+    return targetValue || "N/A";
+  };
+
+  const getJobId = (job) => job?.job_id || job?.JobID || job?.id || job?.ID || "N/A";
+  const getStatus = (job) => job?.status || job?.Status || "N/A";
+  const getMessage = (job) => job?.message || job?.Message || "N/A";
+  const getUpdatedAt = (job) => {
+    const updatedAtValue = job?.updated_at || job?.UpdatedAt || job?.updatedAt;
+    return updatedAtValue ? new Date(updatedAtValue).toLocaleString() : "N/A";
+  };
 
   const refreshJobs = async () => {
     await loadJobs();
@@ -97,41 +161,40 @@ function MonitorJobs() {
           ))}
         </div>
 
-        <div className="monitor-grid">
-          {filteredJobs.length === 0 ? (
-            <div className="empty-state">No jobs found for this filter.</div>
-          ) : (
-            filteredJobs.map((job) => (
-              <div key={job.job_id || job.JobID || Math.random()} className="job-card">
-                <div className="job-card-top">
-                  <div>
-                    <div className="job-id">{job.job_id || job.JobID}</div>
-                    <h4>{job.message || "Job status"}</h4>
-                  </div>
-                  <span className={`status-badge ${statusClassMap[job.status] || "status-queued"}`}>
-                    {job.status}
-                  </span>
-                </div>
-
-                <div className="job-meta">
-                  <span>Updated: {job.updated_at ? new Date(job.updated_at).toLocaleString() : "N/A"}</span>
-                  {job.metadata && Object.keys(job.metadata).length > 0 && (
-                    <span>Metadata: {JSON.stringify(job.metadata)}</span>
-                  )}
-                </div>
-
-                {job.message && (
-                  <div className="progress-block">
-                    <div className="progress-header">
-                      <span>Message</span>
-                    </div>
-                    <div className="message-box">{job.message}</div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+        {filteredJobs.length === 0 ? (
+          <div className="empty-state">No jobs found for this filter.</div>
+        ) : (
+          <div className="monitor-table-wrapper">
+            <table className="monitor-table">
+              <thead>
+                <tr>
+                  <th>JobId</th>
+                  <th>Source</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                  <th>Message</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredJobs.map((job) => (
+                  <tr key={getJobId(job) + (job?.updated_at || job?.UpdatedAt || "")}>
+                    <td>{getJobId(job)}</td>
+                    <td>{formatSource(job)}</td>
+                    <td>{formatTarget(job)}</td>
+                    <td className="status-cell">
+                      <span className={`status-badge ${statusClassMap[getStatus(job)] || "status-queued"}`}>
+                        {getStatus(job)}
+                      </span>
+                    </td>
+                    <td className="message-cell">{getMessage(job)}</td>
+                    <td>{getUpdatedAt(job)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
