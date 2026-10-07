@@ -24,6 +24,7 @@ A Go-based, highly efficient, and configurable Google Cloud orchestration platfo
 ### Versions
 
 - V1 — GCS to BigQuery data ingestion workflow using Cloud Tasks, Firestore status tracking, and a monitoring UI.
+
 ![Workflow Diagram](architecture/gcs-bq-ingestion.png)
 
 ## Local development
