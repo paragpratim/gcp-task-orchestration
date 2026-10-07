@@ -18,8 +18,9 @@ type AppConfig struct {
 	BaseURL             string `json:"base_url"`
 	ServiceAccountEmail string `json:"service_account_email"`
 	// Firestore configuration
-	JobsCollection      string `json:"jobs_collection"`
-	JobStatusCollection string `json:"job_status_collection"`
+	JobsCollection         string `json:"jobs_collection"`
+	JobStatusCollection    string `json:"job_status_collection"`
+	JobStatusLogCollection string `json:"job_status_log_collection"`
 	// Task queue configuration
 	AdminQueueName string `json:"admin_queue_name"`
 	GcsQueueName   string `json:"gcs_queue_name"`
@@ -31,19 +32,20 @@ func LoadConfig() *AppConfig {
 	env := getEnv("APP_ENV", "local")
 
 	return &AppConfig{
-		AppName:             fmt.Sprintf("%s_task_orchestrator", env),
-		Environment:         env,
-		Port:                getEnv("PORT", "8080"),
-		ProjectID:           getEnv("GCP_PROJECT_ID", "local-project"),
-		Region:              getEnv("GCP_REGION", "europe-west1"),
-		FirestoreDB:         getEnv("FIRESTORE_DB", "(default)"),
-		BaseURL:             getEnv("QUEUE_BASE_URL", "http://orchestrator:8080"),
-		ServiceAccountEmail: getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),
-		JobsCollection:      fmt.Sprintf("%s_jobs", env),
-		JobStatusCollection: fmt.Sprintf("%s_job_status", env),
-		AdminQueueName:      fmt.Sprintf("orchestrator-admin-queue-%s", env),
-		GcsQueueName:        fmt.Sprintf("orchestrator-gcs-queue-%s", env),
-		BqQueueName:         fmt.Sprintf("orchestrator-bq-queue-%s", env),
+		AppName:                fmt.Sprintf("%s_task_orchestrator", env),
+		Environment:            env,
+		Port:                   getEnv("PORT", "8080"),
+		ProjectID:              getEnv("GCP_PROJECT_ID", "local-project"),
+		Region:                 getEnv("GCP_REGION", "europe-west1"),
+		FirestoreDB:            getEnv("FIRESTORE_DB", "(default)"),
+		BaseURL:                getEnv("QUEUE_BASE_URL", "http://orchestrator:8080"),
+		ServiceAccountEmail:    getEnv("QUEUE_SERVICE_ACCOUNT", "local-service-account"),
+		JobsCollection:         fmt.Sprintf("%s_jobs", env),
+		JobStatusCollection:    fmt.Sprintf("%s_job_status", env),
+		JobStatusLogCollection: fmt.Sprintf("%s_job_status_log", env),
+		AdminQueueName:         fmt.Sprintf("orchestrator-admin-queue-%s", env),
+		GcsQueueName:           fmt.Sprintf("orchestrator-gcs-queue-%s", env),
+		BqQueueName:            fmt.Sprintf("orchestrator-bq-queue-%s", env),
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
+	LogCollection    string
 	GcsQueueName     string
 	BqQueueName      string
 	AdminQueueName   string
@@ -28,16 +29,18 @@ type Config struct {
 type Service struct {
 	jobsRepo    gcp.DocumentRepository[models.JobDefinition]
 	statusRepo  gcp.DocumentRepository[models.JobStatus]
+	logRepo     gcp.DocumentRepository[models.JobStatusLog]
 	tasksRepo   gcp.TaskRepository
 	storageRepo gcp.ObjectRepository
 	cfg         Config
 }
 
 // NewService creates a new instance of the GCS Service with the provided repositories and configuration.
-func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, storage gcp.ObjectRepository, cfg Config) *Service {
+func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], logs gcp.DocumentRepository[models.JobStatusLog], tasks gcp.TaskRepository, storage gcp.ObjectRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:    jobs,
 		statusRepo:  status,
+		logRepo:     logs,
 		tasksRepo:   tasks,
 		storageRepo: storage,
 		cfg:         cfg,
@@ -97,6 +100,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		logger.Error("Failed updating execution trace boundary ", "JOB_ID", jobID, "TASK_ID", taskID, "ERROR", err)
 		return nil
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusProcessingGCS, statusTracker.Message)
 
 	jobConfig, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, jobID)
 	if err != nil {
@@ -122,6 +126,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		statusTracker.Message = fmt.Sprintf("GCS scan finalized. Zero matching files identified for criteria: %s", fullFilePattern)
 		statusTracker.UpdatedAt = time.Now().UTC()
 		_, _ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker)
+		s.writeLog(ctx, jobID, taskID, models.StatusSkipped, statusTracker.Message)
 		return nil // Short-circuit execution loop cleanly; downstream pipeline calls are skipped
 	}
 
@@ -134,6 +139,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting discovered assets state to tracking document", err)
 		return nil
 	}
+	s.writeLog(ctx, jobID, taskID, statusTracker.Status, statusTracker.Message)
 
 	// Auto-route execution downstream to Step 2: Move Files
 	taskPayload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
@@ -190,6 +196,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed updating execution trace boundary", err)
 		return nil
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusMovingGCS, statusTracker.Message)
 
 	discoveredObjects, jobConfig, err := s.loadDiscoveredFilesContext(ctx, jobID, taskID, statusTracker)
 	if err != nil {
@@ -227,6 +234,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed locking updated metadata URI configurations", err)
 		return nil
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusCompletedGCS, statusTracker.Message)
 
 	// 6. Chain payload execution over to the BigQuery load step queue
 	taskPayload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
@@ -282,6 +290,7 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting requeued job status", err)
 		return nil
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusQueued, statusTracker.Message)
 
 	logger.Info("Finalized run for Job and status reset to QUEUED.", "JOB_ID", jobID, "TASK_ID", taskID, "RELOCATED_COUNT", len(relocatedURIs), "STAGE", stage)
 	return nil
@@ -312,6 +321,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	tracker.Message = message
 	tracker.UpdatedAt = time.Now().UTC()
 	_, _ = s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker)
+	s.writeLog(ctx, jobID, taskID, models.StatusFailedGCS, message)
 }
 
 // buildObjectKey constructs a GCS object key by combining the prefix, stage, task ID, and filename.
@@ -337,4 +347,19 @@ func extractDiscoveredFiles(rawFiles any) []string {
 		discoveredObjects = slice
 	}
 	return discoveredObjects
+}
+
+// writeLog writes a JobStatusLog entry to the log repository, keyed by taskID.
+func (s *Service) writeLog(ctx context.Context, jobID, taskID string, status models.ExecutionStatus, message string) {
+	if taskID == "" {
+		return
+	}
+	logEntry := models.JobStatusLog{
+		JobID:     jobID,
+		TaskID:    taskID,
+		Status:    status,
+		Message:   message,
+		UpdatedAt: time.Now().UTC(),
+	}
+	_, _ = s.logRepo.Put(ctx, s.cfg.LogCollection, taskID, logEntry)
 }

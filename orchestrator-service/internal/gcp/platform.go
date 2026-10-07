@@ -9,12 +9,13 @@ import (
 
 // Platform is a struct that holds references to various GCP repositories used in the orchestrator.
 type Platform struct {
-	Firestore  *FirestoreRepository[any]
-	Jobs       *FirestoreRepository[models.JobDefinition]
-	JobStatus  *FirestoreRepository[models.JobStatus]
-	CloudTasks *CloudTasksRepository
-	Storage    *StorageRepository
-	BigQuery   *BigQueryRepository
+	Firestore    *FirestoreRepository[any]
+	Jobs         *FirestoreRepository[models.JobDefinition]
+	JobStatus    *FirestoreRepository[models.JobStatus]
+	JobStatusLog *FirestoreRepository[models.JobStatusLog]
+	CloudTasks   *CloudTasksRepository
+	Storage      *StorageRepository
+	BigQuery     *BigQueryRepository
 }
 
 // NewPlatform initializes and returns a new Platform instance with the provided configuration.
@@ -50,12 +51,13 @@ func NewPlatform(ctx context.Context, env, projectID, region, firestoreDB, baseU
 	}
 
 	return &Platform{
-		Firestore:  fsRepo,
-		Jobs:       NewTypedFirestoreRepository[models.JobDefinition](fsRepo.firestoreClient),
-		JobStatus:  NewTypedFirestoreRepository[models.JobStatus](fsRepo.firestoreClient),
-		CloudTasks: tasksRepo,
-		Storage:    gcsRepo,
-		BigQuery:   bqRepo,
+		Firestore:    fsRepo,
+		Jobs:         NewTypedFirestoreRepository[models.JobDefinition](fsRepo.firestoreClient),
+		JobStatus:    NewTypedFirestoreRepository[models.JobStatus](fsRepo.firestoreClient),
+		JobStatusLog: NewTypedFirestoreRepository[models.JobStatusLog](fsRepo.firestoreClient),
+		CloudTasks:   tasksRepo,
+		Storage:      gcsRepo,
+		BigQuery:     bqRepo,
 	}, nil
 }
 

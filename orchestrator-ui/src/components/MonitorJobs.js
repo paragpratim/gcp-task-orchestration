@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API_CONFIG from "../config";
 
 const statusClassMap = {
@@ -18,6 +19,7 @@ const statusClassMap = {
 };
 
 function MonitorJobs() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
   const [loading, setLoading] = useState(false);
@@ -138,6 +140,13 @@ function MonitorJobs() {
     await loadJobs();
   };
 
+  const openJobTasks = (jobId) => {
+    if (!jobId || jobId === "N/A") {
+      return;
+    }
+    navigate(`/monitor-tasks?jobId=${encodeURIComponent(jobId)}`);
+  };
+
   return (
     <div>
       <div className="page-header monitor-header">
@@ -179,7 +188,15 @@ function MonitorJobs() {
               <tbody>
                 {filteredJobs.map((job) => (
                   <tr key={getJobId(job) + (job?.updated_at || job?.UpdatedAt || "")}>
-                    <td>{getJobId(job)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="job-link-button"
+                        onClick={() => openJobTasks(getJobId(job))}
+                      >
+                        {getJobId(job)}
+                      </button>
+                    </td>
                     <td>{formatSource(job)}</td>
                     <td>{formatTarget(job)}</td>
                     <td className="status-cell">

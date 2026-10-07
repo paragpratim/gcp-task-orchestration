@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"orchestrator/internal/gcp"
@@ -17,6 +18,7 @@ import (
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
+	LogCollection    string
 	AdminQueueName   string
 }
 
@@ -24,15 +26,17 @@ type Config struct {
 type Service struct {
 	jobsRepo      gcp.DocumentRepository[models.JobDefinition]
 	statusRepo    gcp.DocumentRepository[models.JobStatus]
+	logRepo       gcp.DocumentRepository[models.JobStatusLog]
 	taskQueueRepo gcp.TaskRepository
 	cfg           Config
 }
 
 // NewService creates a new instance of the admin Service with the provided repositories and configuration.
-func NewService(jobsRepo gcp.DocumentRepository[models.JobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, cfg Config) *Service {
+func NewService(jobsRepo gcp.DocumentRepository[models.JobDefinition], statusRepo gcp.DocumentRepository[models.JobStatus], logRepo gcp.DocumentRepository[models.JobStatusLog], tasks gcp.TaskRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:      jobsRepo,
 		statusRepo:    statusRepo,
+		logRepo:       logRepo,
 		taskQueueRepo: tasks,
 		cfg:           cfg,
 	}
@@ -89,6 +93,15 @@ func (s *Service) GetAllJobStatuses(ctx *gin.Context) (*[]models.JobStatus, erro
 		return nil, fmt.Errorf("failed to retrieve all admin job statuses: %w", err)
 	}
 	return allJobStatuses, nil
+}
+
+// GetAllJobStatusLogs retrieves all admin job status logs from the repository.
+func (s *Service) GetAllJobStatusLogs(ctx *gin.Context) (*[]models.JobStatusLog, error) {
+	allJobStatusLogs, err := s.logRepo.GetAll(ctx, s.cfg.LogCollection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve all admin job status logs: %w", err)
+	}
+	return allJobStatusLogs, nil
 }
 
 // UpdateJob validates and updates an existing admin job definition.
@@ -210,8 +223,26 @@ func (s *Service) QueueActiveJobs(ctx *gin.Context, jobDefinition models.JobDefi
 			return nil, fmt.Errorf("failed to persist job status for job %s: %w", job.ID, err)
 		}
 
+		// Write the initial log entry
+		s.writeLog(ctx, job.ID, taskID, models.StatusQueued, "Job queued for processing")
+
 		jobStatuses = append(jobStatuses, jobStatus)
 	}
 
 	return &jobStatuses, nil
+}
+
+// writeLog writes a JobStatusLog entry to the log repository, keyed by taskID.
+func (s *Service) writeLog(ctx context.Context, jobID, taskID string, status models.ExecutionStatus, message string) {
+	if taskID == "" {
+		return
+	}
+	logEntry := models.JobStatusLog{
+		JobID:     jobID,
+		TaskID:    taskID,
+		Status:    status,
+		Message:   message,
+		UpdatedAt: time.Now().UTC(),
+	}
+	_, _ = s.logRepo.Put(ctx, s.cfg.LogCollection, taskID, logEntry)
 }

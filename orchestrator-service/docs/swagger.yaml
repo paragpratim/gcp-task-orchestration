@@ -92,6 +92,21 @@ definitions:
       updated_at:
         type: string
     type: object
+  orchestrator_internal_models.JobStatusLog:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/orchestrator_internal_models.ExecutionStatus'
+        description: Holds the ExecutionStatus string
+      task_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
   orchestrator_internal_models.PipelineTaskPayload:
     properties:
       job_id:
@@ -321,6 +336,27 @@ paths:
               type: string
             type: object
       summary: Get Job Statuses
+      tags:
+      - admin
+  /admin/jobs/status/logs:
+    get:
+      description: Retrieves the status logs of all admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Status Logs Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobStatusLog'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job Status Logs
       tags:
       - admin
   /bigquery/job/check:

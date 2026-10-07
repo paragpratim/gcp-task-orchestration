@@ -18,6 +18,7 @@ import (
 type Config struct {
 	JobsCollection   string
 	StatusCollection string
+	LogCollection    string
 	GcsQueueName     string
 	BqQueueName      string
 }
@@ -26,16 +27,18 @@ type Config struct {
 type Service struct {
 	jobsRepo     gcp.DocumentRepository[models.JobDefinition]
 	statusRepo   gcp.DocumentRepository[models.JobStatus]
+	logRepo      gcp.DocumentRepository[models.JobStatusLog]
 	tasksRepo    gcp.TaskRepository
 	bigQueryRepo gcp.DataRepository
 	cfg          Config
 }
 
 // NewService creates a new instance of the BigQuery service with the provided repositories and configuration.
-func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], tasks gcp.TaskRepository, bigQueryRepo gcp.DataRepository, cfg Config) *Service {
+func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.DocumentRepository[models.JobStatus], logs gcp.DocumentRepository[models.JobStatusLog], tasks gcp.TaskRepository, bigQueryRepo gcp.DataRepository, cfg Config) *Service {
 	return &Service{
 		jobsRepo:     jobs,
 		statusRepo:   status,
+		logRepo:      logs,
 		tasksRepo:    tasks,
 		bigQueryRepo: bigQueryRepo,
 		cfg:          cfg,
@@ -79,6 +82,7 @@ func (s *Service) CreateLoadJob(ctx context.Context, task models.PipelineTaskPay
 	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		return fmt.Errorf("failed persisting BigQuery load job state transition for JOB_ID %s: %w", jobID, err)
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusProcessingBigQuery, statusTracker.Message)
 
 	jobConfig, err := s.jobsRepo.Get(ctx, s.cfg.JobsCollection, jobID)
 	if err != nil || jobConfig == nil {
@@ -113,6 +117,7 @@ func (s *Service) CreateLoadJob(ctx context.Context, task models.PipelineTaskPay
 	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 		return s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting BigQuery job ID back into tracker", err)
 	}
+	s.writeLog(ctx, jobID, taskID, statusTracker.Status, statusTracker.Message)
 
 	payload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
 	payloadBytes, err := json.Marshal(payload)
@@ -176,6 +181,7 @@ func (s *Service) CheckLoadJobStatus(ctx context.Context, task models.PipelineTa
 		if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *statusTracker); err != nil {
 			return fmt.Errorf("failed persisting successful BigQuery job state for job %s: %w", jobID, err)
 		}
+		s.writeLog(ctx, jobID, taskID, models.StatusCompletedBigQuery, statusTracker.Message)
 
 		payload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
 		payloadBytes, err := json.Marshal(payload)
@@ -218,6 +224,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 	if _, err := s.statusRepo.Put(ctx, s.cfg.StatusCollection, jobID, *tracker); err != nil {
 		return fmt.Errorf("failed persisting failed BigQuery state before finalization route for job %s: %w", jobID, err)
 	}
+	s.writeLog(ctx, jobID, taskID, models.StatusFailedBQ, message)
 
 	payload := models.PipelineTaskPayload{JobID: jobID, TaskID: taskID}
 	payloadBytes, marshalErr := json.Marshal(payload)
@@ -260,4 +267,19 @@ func extractDiscoveredFiles(rawFiles any) []string {
 		return slice
 	}
 	return discovered
+}
+
+// writeLog writes a JobStatusLog entry to the log repository, keyed by taskID.
+func (s *Service) writeLog(ctx context.Context, jobID, taskID string, status models.ExecutionStatus, message string) {
+	if taskID == "" {
+		return
+	}
+	logEntry := models.JobStatusLog{
+		JobID:     jobID,
+		TaskID:    taskID,
+		Status:    status,
+		Message:   message,
+		UpdatedAt: time.Now().UTC(),
+	}
+	_, _ = s.logRepo.Put(ctx, s.cfg.LogCollection, taskID, logEntry)
 }

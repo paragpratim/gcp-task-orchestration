@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import CreateJobDetails from "./components/CreateJobDetails";
 import MonitorJobs from "./components/MonitorJobs";
+import MonitorTasks from "./components/MonitorTasks";
 import QueueAllJobs from "./components/QueueAllJobs";
 import "./styles.css";
 
@@ -16,12 +17,14 @@ function App() {
         <nav style={{ marginBottom: "32px" }}>
           <Link to="/create-job" className="ui-button ui-widget ui-corner-all">Create Job Details</Link>
           <Link to="/monitor-jobs" className="ui-button ui-widget ui-corner-all">Monitor Jobs</Link>
+          <Link to="/monitor-tasks" className="ui-button ui-widget ui-corner-all">Monitor Tasks</Link>
           <Link to="/queue-all-jobs" className="ui-button ui-widget ui-corner-all">Queue All Jobs</Link>
         </nav>
         <Routes>
           <Route path="/" element={<Navigate to="/create-job" replace />} />
           <Route path="/create-job" element={<CreateJobDetails />} />
           <Route path="/monitor-jobs" element={<MonitorJobs />} />
+          <Route path="/monitor-tasks" element={<MonitorTasks />} />
           <Route path="/queue-all-jobs" element={<QueueAllJobs />} />
         </Routes>
       </div>

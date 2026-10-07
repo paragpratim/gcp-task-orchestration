@@ -188,6 +188,20 @@ pre {
   color: #fff;
 }
 
+.job-link-button {
+  background: transparent;
+  border: none;
+  color: #1976d2;
+  font-weight: 700;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.job-link-button:hover {
+  text-decoration: underline;
+}
+
 .monitor-table-wrapper {
   margin-top: 12px;
   overflow-x: auto;

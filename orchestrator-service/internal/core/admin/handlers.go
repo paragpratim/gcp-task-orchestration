@@ -32,6 +32,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.PUT(routes.AdminJobUpdate, h.updateJob)
 	rg.DELETE(routes.AdminJobDelete, h.deleteJob)
 	rg.POST(routes.AdminJobsQueue, h.queueJobs)
+	rg.GET(routes.AdminJobsStatusLogGetAll, h.getAllJobStatusLogs)
 }
 
 // handleJob 	 A generic handler for admin job operations that processes the request and executes the provided action.
@@ -229,6 +230,25 @@ func (h *Handler) getJobStatus(c *gin.Context) {
 	statuses, err := h.service.GetAllJobStatuses(c)
 	if err != nil {
 		logger.Error("Job statuses retrieval failed", "ERROR", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, statuses)
+}
+
+// getAllJobStatusLogs 	 Handles the retrieval of all job status logs.
+// @Summary      Get Job Status Logs
+// @Description  Retrieves the status logs of all admin jobs.
+// @Tags         admin
+// @Produce      json
+// @Success      200  {array}   models.JobStatusLog "Job Status Logs Retrieved"
+// @Failure      400  {object}  map[string]string "Bad Request"
+// @Router       /admin/jobs/status/logs [get]
+func (h *Handler) getAllJobStatusLogs(c *gin.Context) {
+	statuses, err := h.service.GetAllJobStatusLogs(c)
+	if err != nil {
+		logger.Error("Job status logs retrieval failed", "ERROR", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

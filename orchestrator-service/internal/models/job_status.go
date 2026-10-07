@@ -41,6 +41,15 @@ type JobStatus struct {
 	Metadata  map[string]any  `json:"metadata,omitempty" firestore:"metadata,omitempty"`
 }
 
+// JobStatusLog represents a log entry for a job status update.
+type JobStatusLog struct {
+	JobID     string          `json:"job_id" firestore:"job_id"`
+	TaskID    string          `json:"task_id" firestore:"task_id"`
+	Status    ExecutionStatus `json:"status" firestore:"status"` // Holds the ExecutionStatus string
+	Message   string          `json:"message" firestore:"message"`
+	UpdatedAt time.Time       `json:"updated_at" firestore:"updated_at"`
+}
+
 // PipelineTaskPayload represents the payload for a pipeline task.
 type PipelineTaskPayload struct {
 	JobID  string `json:"job_id" binding:"required"`

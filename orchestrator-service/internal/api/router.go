@@ -42,21 +42,24 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 	})
 
 	// Initialize feature handlers with their respective services and configurations
-	initHandler := admin.NewHandler(admin.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, admin.Config{
+	initHandler := admin.NewHandler(admin.NewService(infra.Jobs, infra.JobStatus, infra.JobStatusLog, infra.CloudTasks, admin.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
+		LogCollection:    appCfg.JobStatusLogCollection,
 		AdminQueueName:   appCfg.AdminQueueName,
 	}))
-	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, infra.Storage, gcs.Config{
+	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Jobs, infra.JobStatus, infra.JobStatusLog, infra.CloudTasks, infra.Storage, gcs.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
+		LogCollection:    appCfg.JobStatusLogCollection,
 		GcsQueueName:     appCfg.GcsQueueName,
 		BqQueueName:      appCfg.BqQueueName,
 		AdminQueueName:   appCfg.AdminQueueName,
 	}))
-	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Jobs, infra.JobStatus, infra.CloudTasks, infra.BigQuery, bigquery.Config{
+	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Jobs, infra.JobStatus, infra.JobStatusLog, infra.CloudTasks, infra.BigQuery, bigquery.Config{
 		JobsCollection:   appCfg.JobsCollection,
 		StatusCollection: appCfg.JobStatusCollection,
+		LogCollection:    appCfg.JobStatusLogCollection,
 		GcsQueueName:     appCfg.GcsQueueName,
 		BqQueueName:      appCfg.BqQueueName,
 	}))

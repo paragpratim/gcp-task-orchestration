@@ -305,6 +305,38 @@
                 }
             }
         },
+        "/admin/jobs/status/logs": {
+            "get": {
+                "description": "Retrieves the status logs of all admin jobs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get Job Status Logs",
+                "responses": {
+                    "200": {
+                        "description": "Job Status Logs Retrieved",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/orchestrator_internal_models.JobStatusLog"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/bigquery/job/check": {
             "post": {
                 "description": "Retrieves the details of a specific BigQuery job by its ID.",
@@ -631,6 +663,31 @@
                             "$ref": "#/definitions/orchestrator_internal_models.ExecutionStatus"
                         }
                     ]
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "orchestrator_internal_models.JobStatusLog": {
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Holds the ExecutionStatus string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/orchestrator_internal_models.ExecutionStatus"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
