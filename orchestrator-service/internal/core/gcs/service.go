@@ -279,6 +279,9 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 		relocatedURIs = append(relocatedURIs, fmt.Sprintf("gs://%s/%s", bucketName, destKey))
 	}
 
+	// Write a log entry for the finalization of the run.
+	s.writeLog(ctx, jobID, taskID, statusTracker.Status, statusTracker.Message)
+
 	// Reset the tracker to QUEUED, clearing per-run metadata and the TaskID so the
 	// next ListFiles invocation starts a fresh run for this job.
 	statusTracker.Status = models.StatusQueued
@@ -290,7 +293,6 @@ func (s *Service) finalizeRun(ctx context.Context, jobID, taskID string, statusT
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed persisting requeued job status", err)
 		return nil
 	}
-	s.writeLog(ctx, jobID, taskID, models.StatusQueued, statusTracker.Message)
 
 	logger.Info("Finalized run for Job and status reset to QUEUED.", "JOB_ID", jobID, "TASK_ID", taskID, "RELOCATED_COUNT", len(relocatedURIs), "STAGE", stage)
 	return nil
@@ -354,6 +356,12 @@ func (s *Service) writeLog(ctx context.Context, jobID, taskID string, status mod
 	if taskID == "" {
 		return
 	}
+
+	// Log Success
+	if status == models.StatusCompletedBigQuery {
+		status = models.StatusSuccess
+	}
+
 	logEntry := models.JobStatusLog{
 		JobID:     jobID,
 		TaskID:    taskID,
