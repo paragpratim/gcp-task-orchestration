@@ -1,0 +1,504 @@
+basePath: /api/v1
+definitions:
+  orchestrator_internal_models.BigQueryFileType:
+    enum:
+    - CSV
+    - AVRO
+    - NEWLINE_DELIMITED_JSON
+    - DATASTORE_BACKUP
+    - GOOGLE_SHEETS
+    - BIGTABLE
+    - PARQUET
+    - ORC
+    - ML_TF_SAVED_MODEL
+    - ML_XGBOOST_BOOSTER
+    - ICEBERG
+    type: string
+    x-enum-varnames:
+    - FileTypeCSV
+    - FileTypeAvro
+    - FileTypeJSON
+    - FileTypeDatastoreBackup
+    - FileTypeGoogleSheets
+    - FileTypeBigtable
+    - FileTypeParquet
+    - FileTypeORC
+    - FileTypeTFSavedModel
+    - FileTypeXGBoostBooster
+    - FileTypeIceberg
+  orchestrator_internal_models.ExecutionStatus:
+    enum:
+    - QUEUED
+    - COMPLETED_SKIPPED
+    - SUCCESS
+    - PROCESSING_GCS
+    - MOVING_GCS
+    - COMPLETED_GCS
+    - FAILED_GCS
+    - PROCESSING_BIGQUERY
+    - COMPLETED_BIGQUERY
+    - FAILED_BIGQUERY
+    - PROCESSING_DATAFLOW
+    - COMPLETED_DATAFLOW
+    - FAILED_DATAFLOW
+    type: string
+    x-enum-varnames:
+    - StatusQueued
+    - StatusSkipped
+    - StatusSuccess
+    - StatusProcessingGCS
+    - StatusMovingGCS
+    - StatusCompletedGCS
+    - StatusFailedGCS
+    - StatusProcessingBigQuery
+    - StatusCompletedBigQuery
+    - StatusFailedBQ
+    - StatusProcessingDataflow
+    - StatusCompletedDataflow
+    - StatusFailedDataflow
+  orchestrator_internal_models.JobDefinition:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      name:
+        type: string
+      source:
+        $ref: '#/definitions/orchestrator_internal_models.SourceDefinition'
+      target:
+        $ref: '#/definitions/orchestrator_internal_models.TargetDefinition'
+      updated_at:
+        type: string
+    type: object
+  orchestrator_internal_models.JobStatus:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      status:
+        allOf:
+        - $ref: '#/definitions/orchestrator_internal_models.ExecutionStatus'
+        description: Holds the ExecutionStatus string
+      updated_at:
+        type: string
+    type: object
+  orchestrator_internal_models.JobStatusLog:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/orchestrator_internal_models.ExecutionStatus'
+        description: Holds the ExecutionStatus string
+      task_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  orchestrator_internal_models.PipelineTaskPayload:
+    properties:
+      job_id:
+        type: string
+      task_id:
+        type: string
+    required:
+    - job_id
+    type: object
+  orchestrator_internal_models.SourceDefinition:
+    properties:
+      bucket_name:
+        type: string
+      file_pattern:
+        type: string
+      file_type:
+        $ref: '#/definitions/orchestrator_internal_models.BigQueryFileType'
+      prefix:
+        type: string
+    type: object
+  orchestrator_internal_models.TargetDefinition:
+    properties:
+      dataset_id:
+        type: string
+      project_id:
+        type: string
+      table_name:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This is a server for the GCP Task Orchestration api.
+  title: GCP Task Orchestration API
+  version: "1.0"
+paths:
+  /admin/health:
+    get:
+      description: Responds with an OK status if the api is running.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+  /admin/job:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a new admin job request and processes it.
+      parameters:
+      - description: Job Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Job Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Job
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Accepts an update request for an existing admin job and processes
+        it.
+      parameters:
+      - description: Job Update Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Updated
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Job
+      tags:
+      - admin
+  /admin/job/{id}:
+    delete:
+      description: Deletes an existing admin job by its ID.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Job
+      tags:
+      - admin
+    get:
+      description: Retrieves an existing admin job by its ID.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Retrieved
+          schema:
+            $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job
+      tags:
+      - admin
+  /admin/jobs:
+    get:
+      description: Retrieves all existing admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Jobs Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get All Jobs
+      tags:
+      - admin
+  /admin/jobs/queue:
+    post:
+      consumes:
+      - application/json
+      description: Queues all the active admin jobs for processing.
+      parameters:
+      - description: Queue Jobs Request Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.JobDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Jobs Queued
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Queue Active Jobs
+      tags:
+      - admin
+  /admin/jobs/status:
+    get:
+      description: Retrieves the status of all admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Statuses Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobStatus'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job Statuses
+      tags:
+      - admin
+  /admin/jobs/status/logs:
+    get:
+      description: Retrieves the status logs of all admin jobs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Job Status Logs Retrieved
+          schema:
+            items:
+              $ref: '#/definitions/orchestrator_internal_models.JobStatusLog'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Job Status Logs
+      tags:
+      - admin
+  /bigquery/job/check:
+    post:
+      description: Retrieves the details of a specific BigQuery job by its ID.
+      parameters:
+      - description: Lean Pipeline Transport Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get BigQuery job
+      tags:
+      - bigquery
+  /bigquery/job/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new BigQuery job with the provided details.
+      parameters:
+      - description: Lean Pipeline Transport Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create BigQuery job
+      tags:
+      - bigquery
+  /bigquery/region/check:
+    post:
+      description: Checks the availability of a specific BigQuery region.
+      parameters:
+      - description: Lean Pipeline Transport Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check BigQuery region
+      tags:
+      - bigquery
+  /gcs/files/list:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a minimal task payload, verifies configuration status,
+        aggregates matching files via globs, and triggers the move stage.
+      parameters:
+      - description: Lean Pipeline Transport Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List and Track GCS Files
+      tags:
+      - gcs
+  /gcs/files/move:
+    post:
+      consumes:
+      - application/json
+      description: Relocates discovered files to a processed folder boundary, updates
+        metadata structures, and schedules the BigQuery loading phase.
+      parameters:
+      - description: Lean Pipeline Transport Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/orchestrator_internal_models.PipelineTaskPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Move Files and Queue Ingestion
+      tags:
+      - gcs
+swagger: "2.0"

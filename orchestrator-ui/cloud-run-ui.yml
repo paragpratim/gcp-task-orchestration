@@ -1,0 +1,51 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${UI_SERVICE_NAME}
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/network-interfaces: '[{"network":"projects/${PROJECT_ID}/global/networks/orchestrator-vpc","subnetwork":"projects/${PROJECT_ID}/regions/${REGION}/subnetworks/orchestrator-subnet"}]'
+        run.googleapis.com/vpc-access-egress: all-traffic
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - name: ${UI_SERVICE_NAME}
+          image: ${ARTIFACT_REGISTRY}/${UI_SERVICE_NAME}:latest
+          ports:
+            - name: http1
+              containerPort: 80
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: BACKEND_URL
+              value: "${BACKEND_URL}"
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 30
+            failureThreshold: 3
+      serviceAccountName: svc-cr-task-orchestrator@${PROJECT_ID}.iam.gserviceaccount.com
