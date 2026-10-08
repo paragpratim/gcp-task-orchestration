@@ -17,14 +17,14 @@ import (
 
 // Config holds configuration parameters for the GCS service.
 type Config struct {
-	JobsCollection       string
-	StatusCollection     string
-	LogCollection        string
-	GcsQueueName         string
-	BqQueueName          string
-	AdminQueueName       string
+	JobsCollection   string
+	StatusCollection string
+	LogCollection    string
+	GcsQueueName     string
+	BqQueueName      string
+	AdminQueueName   string
 	// Time intervals for task scheduling
-	TaskFrequency        time.Duration
+	TaskFrequency          time.Duration
 	StatusCheckerFrequency time.Duration
 }
 

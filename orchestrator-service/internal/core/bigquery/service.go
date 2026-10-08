@@ -16,11 +16,11 @@ import (
 
 // Config holds configuration values for the BigQuery service.
 type Config struct {
-	JobsCollection         string
-	StatusCollection       string
-	LogCollection          string
-	GcsQueueName           string
-	BqQueueName            string
+	JobsCollection   string
+	StatusCollection string
+	LogCollection    string
+	GcsQueueName     string
+	BqQueueName      string
 	// Time intervals for task scheduling
 	BQLoadJobCheckFrequency time.Duration
 	StatusCheckerFrequency  time.Duration
