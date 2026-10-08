@@ -49,19 +49,23 @@ func SetupRouter(infra *gcp.Platform, appCfg *config.AppConfig) *gin.Engine {
 		AdminQueueName:   appCfg.AdminQueueName,
 	}))
 	gcsHandler := gcs.NewHandler(gcs.NewService(infra.Jobs, infra.JobStatus, infra.JobStatusLog, infra.CloudTasks, infra.Storage, gcs.Config{
-		JobsCollection:   appCfg.JobsCollection,
-		StatusCollection: appCfg.JobStatusCollection,
-		LogCollection:    appCfg.JobStatusLogCollection,
-		GcsQueueName:     appCfg.GcsQueueName,
-		BqQueueName:      appCfg.BqQueueName,
-		AdminQueueName:   appCfg.AdminQueueName,
+		JobsCollection:       appCfg.JobsCollection,
+		StatusCollection:     appCfg.JobStatusCollection,
+		LogCollection:        appCfg.JobStatusLogCollection,
+		GcsQueueName:         appCfg.GcsQueueName,
+		BqQueueName:          appCfg.BqQueueName,
+		AdminQueueName:       appCfg.AdminQueueName,
+		TaskFrequency:        appCfg.TaskFrequency,
+		StatusCheckerFrequency: appCfg.StatusCheckerFrequency,
 	}))
 	bqHandler := bigquery.NewHandler(bigquery.NewService(infra.Jobs, infra.JobStatus, infra.JobStatusLog, infra.CloudTasks, infra.BigQuery, bigquery.Config{
-		JobsCollection:   appCfg.JobsCollection,
-		StatusCollection: appCfg.JobStatusCollection,
-		LogCollection:    appCfg.JobStatusLogCollection,
-		GcsQueueName:     appCfg.GcsQueueName,
-		BqQueueName:      appCfg.BqQueueName,
+		JobsCollection:         appCfg.JobsCollection,
+		StatusCollection:       appCfg.JobStatusCollection,
+		LogCollection:          appCfg.JobStatusLogCollection,
+		GcsQueueName:           appCfg.GcsQueueName,
+		BqQueueName:            appCfg.BqQueueName,
+		BQLoadJobCheckFrequency: appCfg.BQLoadJobCheckFrequency,
+		StatusCheckerFrequency:  appCfg.StatusCheckerFrequency,
 	}))
 	dfHandler := dataflow.NewHandler(dataflow.NewService(infra.Firestore, infra.CloudTasks))
 

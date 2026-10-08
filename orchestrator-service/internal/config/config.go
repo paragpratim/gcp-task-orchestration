@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 )
 
 // AppConfig holds the configuration for the application.
@@ -25,6 +27,10 @@ type AppConfig struct {
 	AdminQueueName string `json:"admin_queue_name"`
 	GcsQueueName   string `json:"gcs_queue_name"`
 	BqQueueName    string `json:"bq_queue_name"`
+	// Time intervals configuration
+	TaskFrequency           time.Duration `json:"task_frequency"`
+	StatusCheckerFrequency  time.Duration `json:"status_checker_frequency"`
+	BQLoadJobCheckFrequency time.Duration `json:"bq_load_job_check_frequency"`
 }
 
 // LoadConfig loads the application configuration from environment variables.
@@ -46,6 +52,10 @@ func LoadConfig() *AppConfig {
 		AdminQueueName:         fmt.Sprintf("orchestrator-admin-queue-%s", env),
 		GcsQueueName:           fmt.Sprintf("orchestrator-gcs-queue-%s", env),
 		BqQueueName:            fmt.Sprintf("orchestrator-bq-queue-%s", env),
+		// Time intervals - configurable via environment variables, with sensible defaults
+		TaskFrequency:           getDurationEnv("TASK_FREQUENCY", 15*time.Minute),
+		StatusCheckerFrequency:  getDurationEnv("STATUS_CHECKER_FREQUENCY", 10*time.Second),
+		BQLoadJobCheckFrequency: getDurationEnv("BQ_LOAD_JOB_CHECK_FREQUENCY", 1*time.Minute),
 	}
 }
 
@@ -54,6 +64,24 @@ func LoadConfig() *AppConfig {
 func getEnv(key, fallback string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
+	}
+	return fallback
+}
+
+// getDurationEnv retrieves a time.Duration from an environment variable.
+// The value can be a string like "15m", "10s", "1h" (Go duration format),
+// or a plain integer representing seconds. If the variable is not present
+// or invalid, it returns the fallback value.
+func getDurationEnv(key string, fallback time.Duration) time.Duration {
+	if value, exists := os.LookupEnv(key); exists && value != "" {
+		// Try parsing as a Go duration string first (e.g., "15m", "10s", "1h")
+		if d, err := time.ParseDuration(value); err == nil {
+			return d
+		}
+		// Fall back to parsing as an integer representing seconds
+		if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
+			return time.Duration(seconds) * time.Second
+		}
 	}
 	return fallback
 }

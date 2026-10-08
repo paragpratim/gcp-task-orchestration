@@ -17,12 +17,15 @@ import (
 
 // Config holds configuration parameters for the GCS service.
 type Config struct {
-	JobsCollection   string
-	StatusCollection string
-	LogCollection    string
-	GcsQueueName     string
-	BqQueueName      string
-	AdminQueueName   string
+	JobsCollection       string
+	StatusCollection     string
+	LogCollection        string
+	GcsQueueName         string
+	BqQueueName          string
+	AdminQueueName       string
+	// Time intervals for task scheduling
+	TaskFrequency        time.Duration
+	StatusCheckerFrequency time.Duration
 }
 
 // Service provides methods to manage GCS file operations and task scheduling.
@@ -54,12 +57,6 @@ const (
 	stageFailed     = "failed"
 )
 
-// nextRunInterval defines the interval for scheduling the next Job run.
-const nextRunInterval = 15 * time.Minute
-
-// nextTaskInterval defines the interval for scheduling the next task run.
-const nextTaskInterval = 10 * time.Second
-
 // ListFiles scans the GCS bucket for files matching the job's pattern and schedules the next run.
 func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload) error {
 	jobID := task.JobID
@@ -71,7 +68,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 	if err != nil {
 		return fmt.Errorf("failed marshalling next-run payload for job %s: %w", jobID, err)
 	}
-	if err := s.tasksRepo.Put(ctx, s.cfg.AdminQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), nextRunBytes, nextRunInterval); err != nil {
+	if err := s.tasksRepo.Put(ctx, s.cfg.AdminQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSListFiles), nextRunBytes, s.cfg.TaskFrequency); err != nil {
 		return fmt.Errorf("failed scheduling next run for job %s: %w", jobID, err)
 	}
 
@@ -149,7 +146,7 @@ func (s *Service) ListFiles(ctx context.Context, task models.PipelineTaskPayload
 		return nil
 	}
 
-	err = s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, nextTaskInterval)
+	err = s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, s.cfg.StatusCheckerFrequency)
 	if err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed chaining task execution flow down to file processing archiver", err)
 		return nil
@@ -244,7 +241,7 @@ func (s *Service) moveToProcessing(ctx context.Context, jobID, taskID string, st
 		return nil
 	}
 
-	err = s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCreate), payloadBytes, nextTaskInterval)
+	err = s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCreate), payloadBytes, s.cfg.StatusCheckerFrequency)
 	if err != nil {
 		s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed routing ingestion block container down to BigQuery task queue", err)
 		return nil

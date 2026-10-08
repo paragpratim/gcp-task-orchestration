@@ -16,11 +16,14 @@ import (
 
 // Config holds configuration values for the BigQuery service.
 type Config struct {
-	JobsCollection   string
-	StatusCollection string
-	LogCollection    string
-	GcsQueueName     string
-	BqQueueName      string
+	JobsCollection         string
+	StatusCollection       string
+	LogCollection          string
+	GcsQueueName           string
+	BqQueueName            string
+	// Time intervals for task scheduling
+	BQLoadJobCheckFrequency time.Duration
+	StatusCheckerFrequency  time.Duration
 }
 
 // Service encapsulates the logic for managing BigQuery load jobs within the orchestrator pipeline.
@@ -44,12 +47,6 @@ func NewService(jobs gcp.DocumentRepository[models.JobDefinition], status gcp.Do
 		cfg:          cfg,
 	}
 }
-
-// nextBQCheckInterval defines the interval at which the orchestrator will poll the status of an in-flight BigQuery load job.
-const nextBQCheckInterval = 1 * time.Minute
-
-// nextTaskInterval defines the interval for scheduling the next task run.
-const nextTaskInterval = 10 * time.Second
 
 // CreateLoadJob kicks off a BigQuery load job for the files relocated by the
 // GCS stage (expected to run once the tracker is in COMPLETED_GCS).
@@ -125,7 +122,7 @@ func (s *Service) CreateLoadJob(ctx context.Context, task models.PipelineTaskPay
 		return s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed marshalling BigQuery status check payload", err)
 	}
 
-	if err := s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCheck), payloadBytes, nextBQCheckInterval); err != nil {
+	if err := s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCheck), payloadBytes, s.cfg.BQLoadJobCheckFrequency); err != nil {
 		return s.failWorkflowStep(ctx, jobID, taskID, statusTracker, "Failed enqueueing BigQuery load status check task", err)
 	}
 
@@ -189,7 +186,7 @@ func (s *Service) CheckLoadJobStatus(ctx context.Context, task models.PipelineTa
 			return fmt.Errorf("failed marshalling GCS finalization payload for job %s: %w", jobID, err)
 		}
 
-		if err := s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, nextTaskInterval); err != nil {
+		if err := s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, s.cfg.StatusCheckerFrequency); err != nil {
 			return fmt.Errorf("failed enqueuing downstream GCS finalization task for job %s: %w", jobID, err)
 		}
 
@@ -232,7 +229,7 @@ func (s *Service) failWorkflowStep(ctx context.Context, jobID, taskID string, tr
 		return fmt.Errorf("failed marshalling GCS failed-finalization payload for job %s: %w", jobID, marshalErr)
 	}
 
-	if err := s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, nextTaskInterval); err != nil {
+	if err := s.tasksRepo.Put(ctx, s.cfg.GcsQueueName, taskspb.HttpMethod_POST, routes.Full(routes.GCSMoveFiles), payloadBytes, s.cfg.StatusCheckerFrequency); err != nil {
 		return fmt.Errorf("failed enqueueing GCS failed-finalization task for job %s: %w", jobID, err)
 	}
 	return nil
@@ -246,7 +243,7 @@ func (s *Service) rescheduleBQCheck(ctx context.Context, jobID, taskID string) e
 		return fmt.Errorf("failed marshalling retry payload for job %s: %w", jobID, err)
 	}
 
-	if err := s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCheck), payloadBytes, nextBQCheckInterval); err != nil {
+	if err := s.tasksRepo.Put(ctx, s.cfg.BqQueueName, taskspb.HttpMethod_POST, routes.Full(routes.BigQueryLoadJobCheck), payloadBytes, s.cfg.BQLoadJobCheckFrequency); err != nil {
 		return fmt.Errorf("failed enqueuing BigQuery retry task for job %s: %w", jobID, err)
 	}
 	return nil
