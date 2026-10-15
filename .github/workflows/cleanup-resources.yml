@@ -57,24 +57,35 @@ jobs:
               --platform=managed || true
           done
 
-      - name: Remove Cloud Run serverless reserved addresses
+      - name: Wait for Cloud Run serverless reservations to clear
         run: |
-          set +e
+          set -e
 
-          ADDRESSES=$(gcloud compute addresses list \
+          for attempt in $(seq 1 12); do
+            ADDRESSES=$(gcloud compute addresses list \
+              --filter="name~'serverless-ipv4-cloudrun' AND region:(${REGION})" \
+              --format="value(name)" 2>/dev/null || true)
+
+            if [ -z "$ADDRESSES" ]; then
+              echo "No Cloud Run serverless reserved addresses remain in ${{ env.REGION }}. Proceeding."
+              break
+            fi
+
+            echo "Cloud Run serverless reserved addresses still present (${attempt}/12):"
+            echo "$ADDRESSES"
+            echo "Waiting 20s for Cloud Run to release the address reservations..."
+            sleep 20
+          done
+
+          FINAL_ADDRESSES=$(gcloud compute addresses list \
             --filter="name~'serverless-ipv4-cloudrun' AND region:(${REGION})" \
-            --format="value(name)" 2>/dev/null)
+            --format="value(name)" 2>/dev/null || true)
 
-          if [ -n "$ADDRESSES" ]; then
-            echo "$ADDRESSES" | while read -r address; do
-              [ -z "$address" ] && continue
-              echo "Deleting Cloud Run reserved address: ${address}"
-              gcloud compute addresses delete "$address" \
-                --region="${{ env.REGION }}" \
-                --quiet || true
-            done
-          else
-            echo "No Cloud Run serverless reserved addresses found in ${{ env.REGION }}"
+          if [ -n "$FINAL_ADDRESSES" ]; then
+            echo "Cloud Run serverless reserved addresses are still present after waiting."
+            echo "$FINAL_ADDRESSES"
+            echo "Terraform destroy may still fail until these are released automatically by Cloud Run."
+            exit 1
           fi
 
       - name: Trigger Terraform destroy workflow
