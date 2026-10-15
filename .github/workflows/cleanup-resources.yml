@@ -57,6 +57,26 @@ jobs:
               --platform=managed || true
           done
 
+      - name: Remove Cloud Run serverless reserved addresses
+        run: |
+          set +e
+
+          ADDRESSES=$(gcloud compute addresses list \
+            --filter="name~'serverless-ipv4-cloudrun' AND region:(${REGION})" \
+            --format="value(name)" 2>/dev/null)
+
+          if [ -n "$ADDRESSES" ]; then
+            echo "$ADDRESSES" | while read -r address; do
+              [ -z "$address" ] && continue
+              echo "Deleting Cloud Run reserved address: ${address}"
+              gcloud compute addresses delete "$address" \
+                --region="${{ env.REGION }}" \
+                --quiet || true
+            done
+          else
+            echo "No Cloud Run serverless reserved addresses found in ${{ env.REGION }}"
+          fi
+
       - name: Trigger Terraform destroy workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
