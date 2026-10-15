@@ -1,0 +1,70 @@
+name: Cleanup Task Orchestration Resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Environment to destroy'
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  PROJECT_ID: ${{ secrets.TASK_ORCHESTRATION_PROJECT_ID }}
+  REGION: europe-west1
+  API_SERVICE_NAME: task-orchestration-api
+  UI_SERVICE_NAME: task-orchestration-ui
+  TARGET_ENV: ${{ github.event.inputs.env || 'dev' }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ env.PROJECT_ID }}
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Delete Cloud Run services
+        run: |
+          set -e
+
+          for service in "${{ env.API_SERVICE_NAME }}" "${{ env.UI_SERVICE_NAME }}"; do
+            echo "Deleting Cloud Run service: ${service}"
+            gcloud run services delete "${service}" \
+              --region="${{ env.REGION }}" \
+              --quiet \
+              --platform=managed || true
+          done
+
+      - name: Trigger Terraform destroy workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering Terraform destroy for environment: ${{ env.TARGET_ENV }}"
+          gh workflow run "Deploy Terraform Infrastructure" \
+            -f action=destroy \
+            -f env="${{ env.TARGET_ENV }}"
+
+      - name: Cleanup summary
+        run: |
+          echo "## Cleanup Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Deleted Cloud Run services: ${{ env.API_SERVICE_NAME }}, ${{ env.UI_SERVICE_NAME }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Triggered Terraform destroy for environment: ${{ env.TARGET_ENV }}" >> "$GITHUB_STEP_SUMMARY"
