@@ -57,50 +57,22 @@ jobs:
               --platform=managed || true
           done
 
-      - name: Wait for Cloud Run serverless reservations to clear
+      - name: Cloud Run cleanup notice
         run: |
-          set -e
+          cat <<'EOF'
+          Cloud Run services were deleted successfully.
 
-          for attempt in $(seq 1 12); do
-            ADDRESSES=$(gcloud compute addresses list \
-              --filter="name~'serverless-ipv4-cloudrun' AND region:(${REGION})" \
-              --format="value(name)" 2>/dev/null || true)
+          NOTE: Google Cloud may keep the managed serverless IPv4 reservation in use for a while after service deletion.
+          This reservation is created by Cloud Run itself and can take up to 2 hours to clear.
 
-            if [ -z "$ADDRESSES" ]; then
-              echo "No Cloud Run serverless reserved addresses remain in ${{ env.REGION }}. Proceeding."
-              break
-            fi
-
-            echo "Cloud Run serverless reserved addresses still present (${attempt}/12):"
-            echo "$ADDRESSES"
-            echo "Waiting 20s for Cloud Run to release the address reservations..."
-            sleep 20
-          done
-
-          FINAL_ADDRESSES=$(gcloud compute addresses list \
-            --filter="name~'serverless-ipv4-cloudrun' AND region:(${REGION})" \
-            --format="value(name)" 2>/dev/null || true)
-
-          if [ -n "$FINAL_ADDRESSES" ]; then
-            echo "Cloud Run serverless reserved addresses are still present after waiting."
-            echo "$FINAL_ADDRESSES"
-            echo "Terraform destroy may still fail until these are released automatically by Cloud Run."
-            exit 1
-          fi
-
-      - name: Trigger Terraform destroy workflow
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          echo "Triggering Terraform destroy for environment: ${{ env.TARGET_ENV }}"
-          gh workflow run "Deploy Terraform Infrastructure" \
-            --repo "${GH_REPO}" \
-            -f action=destroy \
-            -f env="${{ env.TARGET_ENV }}"
+          Terraform destroy should be retried only after that Cloud Run cleanup completes.
+          Example:
+            gh workflow run "Deploy Terraform Infrastructure" -f action=destroy -f env="${{ env.TARGET_ENV }}"
+          EOF
 
       - name: Cleanup summary
         run: |
           echo "## Cleanup Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "✅ Deleted Cloud Run services: ${{ env.API_SERVICE_NAME }}, ${{ env.UI_SERVICE_NAME }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "✅ Triggered Terraform destroy for environment: ${{ env.TARGET_ENV }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "⚠️ Cloud Run may retain its managed serverless IPv4 reservation for up to 2 hours before Terraform destroy can succeed." >> "$GITHUB_STEP_SUMMARY"
+          echo "⚠️ Please retry the Terraform destroy workflow after that Cloud Run cleanup window." >> "$GITHUB_STEP_SUMMARY"
