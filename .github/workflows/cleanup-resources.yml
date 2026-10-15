@@ -30,6 +30,9 @@ jobs:
       id-token: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -57,9 +60,11 @@ jobs:
       - name: Trigger Terraform destroy workflow
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           echo "Triggering Terraform destroy for environment: ${{ env.TARGET_ENV }}"
           gh workflow run "Deploy Terraform Infrastructure" \
+            --repo "${GH_REPO}" \
             -f action=destroy \
             -f env="${{ env.TARGET_ENV }}"
 
